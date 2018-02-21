@@ -23,7 +23,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import org.controlsfx.control.StatusBar?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="1081.0" xmlns="http://javafx.com/javafx/8.0.162-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.Controller">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="1081.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.Controller">
    <top>
       <MenuBar prefHeight="29.0" prefWidth="582.0" BorderPane.alignment="CENTER">
         <menus>
@@ -92,7 +92,7 @@
                            <children>
                               <HBox prefHeight="204.0" prefWidth="859.0">
                                  <children>
-                                    <ImageView fitHeight="205.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
+                                    <ImageView fx:id="albumimage" fitHeight="205.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
                                        <image>
                                           <Image url="@ic_launcher.png" />
                                        </image></ImageView>
@@ -123,7 +123,7 @@
                                                       <Insets />
                                                    </VBox.margin>
                                                 </Label>
-                                                <TextField fx:id="albumname" VBox.vgrow="ALWAYS">
+                                                <TextField fx:id="albumname" promptText="Enter Album Name" VBox.vgrow="ALWAYS">
                                                    <VBox.margin>
                                                       <Insets />
                                                    </VBox.margin>
@@ -160,11 +160,12 @@
                                           </VBox>
                                           <VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0" GridPane.columnIndex="2">
                                              <children>
-                                                <Label text="Language" />
-                                                <TextField fx:id="languagename" editable="false" text="Tamil" />
                                                 <Label text="Year" />
-                                                <TextField fx:id="year" />
-                                                <Button fx:id="newalbum" maxWidth="Infinity" mnemonicParsing="false" prefHeight="68.0" prefWidth="209.0" text="Create New Album" VBox.vgrow="ALWAYS" />
+                                                <TextField fx:id="year" promptText="Enter year" />
+                                                <Button fx:id="newalbum" maxWidth="Infinity" mnemonicParsing="false" prefHeight="15.0" prefWidth="210.0" text="Create New Album" VBox.vgrow="ALWAYS" />
+                                                <Button fx:id="albumupdate" maxWidth="Infinity" mnemonicParsing="false" text="Update" />
+                                                <Button fx:id="clearalbumfields" maxWidth="Infinity" mnemonicParsing="false" text="Clear" />
+                                                <Button fx:id="deletealbum" maxWidth="Infinity" mnemonicParsing="false" text="Delete" />
                                              </children>
                                              <GridPane.margin>
                                                 <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />

@@ -5,14 +5,23 @@ import javafx.collections.ObservableList;
 
 public class observablevalues {
 
-    public static ObservableList artistlist = FXCollections.observableArrayList();
-    public static ObservableList createArtistlist = FXCollections.observableArrayList();
-    public static ObservableList herolist = FXCollections.observableArrayList();
-    public static ObservableList createHerolist = FXCollections.observableArrayList();
-    public static ObservableList heroinlist = FXCollections.observableArrayList();
-    public static ObservableList createHeroinlist = FXCollections.observableArrayList();
-    public static ObservableList lyricistlist = FXCollections.observableArrayList();
-    public static ObservableList genrelist = FXCollections.observableArrayList();
+    public static ObservableList<String> artistlist = FXCollections.observableArrayList();
+    public static ObservableList<String> createArtistlist = FXCollections.observableArrayList();
+    public static ObservableList<String> herolist = FXCollections.observableArrayList();
+    public static ObservableList<String> createHerolist = FXCollections.observableArrayList();
+    public static ObservableList<String> heroinlist = FXCollections.observableArrayList();
+    public static ObservableList<String> createHeroinlist = FXCollections.observableArrayList();
+    public static ObservableList<String> lyricistlist = FXCollections.observableArrayList();
+    public static ObservableList<String> genrelist = FXCollections.observableArrayList();
+    public static ObservableList<String> albumNameList = FXCollections.observableArrayList();
+
+    public static ObservableList<String> getAlbumNameList() {
+        return albumNameList;
+    }
+
+    public static void setAlbumNameList(String albumName) {
+        albumNameList.add(albumName);
+    }
 
     public static ObservableList getCreateArtistlist() {
         return createArtistlist;

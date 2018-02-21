@@ -14,6 +14,7 @@ public class Main extends Application {
         primaryStage.setTitle("Tamil Lyrics");
         primaryStage.setScene(new Scene(root, 300, 275));
         primaryStage.setMaximized(true);
+       // primaryStage.setResizable(false);
         primaryStage.show();
     }
 

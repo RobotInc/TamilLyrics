@@ -14,5 +14,6 @@
     <orderEntry type="library" name="controlfx" level="project" />
     <orderEntry type="library" name="Maven: mysql:mysql-connector-java:6.0.6" level="project" />
     <orderEntry type="library" name="Maven: org.controlsfx:controlsfx:8.40.11" level="project" />
+    <orderEntry type="library" name="Maven: commons-net:commons-net:3.3" level="project" />
   </component>
 </module>
