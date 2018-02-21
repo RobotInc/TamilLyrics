@@ -88,10 +88,6 @@ public class Controller {
             status.setText("Status: Error Connecting");
         }
 
-
-
-
-
     }
 
     public void setStatus(String message){
@@ -100,22 +96,20 @@ public class Controller {
 
 
 public void setAll(){
+
     artistcombo.setItems(observablevalues.getArtistlist());
     herocombo.setItems(observablevalues.getHerolist());
     heroincombo.setItems(observablevalues.getHeroinlist());
     lyricistcombo.setItems(observablevalues.getLyricistlist());
     genrecombo.setItems(observablevalues.getGenrelist());
 
-    comboartist.setItems(observablevalues.getCreateArtistlist());
 
+    comboartist.setItems(observablevalues.getCreateArtistlist());
     comboartist.getItems().add("None");
     combohero.setItems(observablevalues.getCreateHerolist());
-
     combohero.getItems().add("None");
     comboheroin.setItems(observablevalues.getCreateHeroinlist());
-
     comboheroin.getItems().add("None");
-
 
 
     artistcombo.getSelectionModel().selectLast();
