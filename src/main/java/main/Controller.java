@@ -1,6 +1,6 @@
 package main;
 
-import com.sun.deploy.util.FXLoader;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -12,10 +12,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -24,22 +22,30 @@ import javafx.stage.*;
 import main.database.DatabaseHandler;
 import main.ftp.FTPUploader;
 import main.models.album;
+import main.models.song;
 import main.untility.Helper;
 import main.untility.observablevalues;
 import org.controlsfx.control.StatusBar;
 
-import javax.activation.DataHandler;
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
+
+
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class Controller {
 
-    boolean albumset = false;
+    @FXML
+    TableView songtable;
 
+    boolean albumset = false;
+    private PrintStream ps ;
     @FXML
     ImageView albumimage;
 
@@ -49,12 +55,15 @@ public class Controller {
     ObservableList<album> albumlistview = FXCollections.observableArrayList();
     ObservableList<String> albumnameList = FXCollections.observableArrayList();
 
+    private static final Logger LOG = Logger.getLogger(String.valueOf(Controller.class));
 
 
 
     @FXML
     TextField albumname,year,albumid;
 
+    @FXML
+    private TextArea logarea;
     @FXML
     ListView<String> albumview;
 
@@ -79,16 +88,12 @@ public class Controller {
 
        reponse = DatabaseHandler.connect();
 
-        try {
-            ftpUploader = new FTPUploader("139.99.2.52", "tamillyrics@beyonitysoftwares.cf", "mohanravi1990");
-        } catch (Exception e) {
 
-            e.printStackTrace();
-        }
-
+        ps = new PrintStream(new Console(logarea));
+        System.setOut(ps);
+        System.setErr(ps);
         add.setOnAction(new EventHandler<ActionEvent>() {
            public void handle(ActionEvent actionEvent) {
-
                try {
 
                    FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/add.fxml"));
@@ -119,13 +124,14 @@ public class Controller {
 
         if(!(Boolean) reponse.get("error")){
 
-            setStatus("Connected");
+            System.out.println("connec to database\n");
             DatabaseHandler.setListsFromDatabase();
             DatabaseHandler.getAlbums();
             setAll();
 
         }else {
             status.setText("Status: Error Connecting");
+
         }
 
         year.textProperty().addListener(new ChangeListener<String>() {
@@ -215,8 +221,25 @@ public class Controller {
                     comboartist.getSelectionModel().select(DatabaseHandler.getArtistName(a.getArtist_id()));
                     combohero.getSelectionModel().select(DatabaseHandler.getHeroName(a.getHero_id()));
                     comboheroin.getSelectionModel().select(DatabaseHandler.getHeroinName(a.getHeroin_id()));
-                    Image i = new Image(a.getImage_link());
-                    albumimage.setImage(i);
+
+                    Runnable r = new Runnable() {
+                        @Override
+                        public void run() {
+                            Image i = new Image(a.getImage_link());
+                            Timer it = new Timer("Timer");
+                            TimerTask ts = new TimerTask() {
+                                @Override
+                                public void run() {
+                                    status.setProgress(i.getProgress());
+                                }
+                            };
+
+                            it.scheduleAtFixedRate(ts,1000,10);
+                            albumimage.setImage(i);
+                        }
+                    };
+                    Thread t = new Thread(r);
+                    t.start();
                     year.setText(String.valueOf(a.getYear()));
                     albumset = true;
                 }
@@ -285,6 +308,46 @@ public class Controller {
                 albumview.getSelectionModel().clearSelection();
             }
         });
+        try {
+            ftpUploader = new FTPUploader("139.99.2.52", "tamillyrics@beyonitysoftwares.cf", "mohanravi1990");
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+
+        setSongTable();
+    }
+
+    private void setSongTable() {
+        ObservableList<song> songtablelist = FXCollections.observableArrayList();
+        songtablelist.add(new song());
+
+        TableColumn<song,Integer> song_id = new TableColumn("Song Id");
+        song_id.setCellValueFactory(new PropertyValueFactory<song,Integer>("song_id"));
+        TableColumn<song,Integer> album_id = new TableColumn("Album Id");
+        album_id.setCellValueFactory(new PropertyValueFactory<song,Integer>("album_id"));
+        TableColumn<song,String> song_title = new TableColumn("Song Title");
+        song_title.setCellValueFactory(new PropertyValueFactory<song,String>("song_title"));
+        TableColumn<song,String> genre = new TableColumn("Genre");
+        genre.setCellValueFactory(new PropertyValueFactory<song,String>("genre"));
+        TableColumn<song,String> lyricist = new TableColumn("Lyricist");
+        lyricist.setCellValueFactory(new PropertyValueFactory<song,String>("lyricist"));
+        TableColumn<song,String> english_one = new TableColumn("English One");
+        english_one.setCellValueFactory(new PropertyValueFactory<song,String>("english_one"));
+        TableColumn<song,String> english_two = new TableColumn("English Two");
+        english_two.setCellValueFactory(new PropertyValueFactory<song,String>("english_two"));
+        TableColumn<song,String> tamil_one = new TableColumn("Tamil One");
+        tamil_one.setCellValueFactory(new PropertyValueFactory<song,String>("tamil_one"));
+        TableColumn<song,String> tamil_two = new TableColumn("Tamil Two");
+        tamil_two.setCellValueFactory(new PropertyValueFactory<song,String>("tamil_two"));
+        TableColumn<song,String> download_link = new TableColumn("Download Link");
+        download_link.setCellValueFactory(new PropertyValueFactory<song,String>("download_link"));
+        TableColumn upload = new TableColumn("Upload Song");
+
+
+        songtable.getColumns().addAll(song_id,album_id,song_title,genre,lyricist,english_one,english_two,tamil_one,tamil_two,download_link,upload);
+        songtable.setItems(songtablelist);
+
     }
 
     public void setStatus(String message){
@@ -324,4 +387,21 @@ public class Controller {
     private String getInt(int value){
         return String.valueOf(value);
     }
+    public class Console extends OutputStream {
+        private TextArea console;
+
+        public Console(TextArea console) {
+            this.console = console;
+        }
+
+        public void appendText(String valueOf) {
+            Platform.runLater(() -> console.appendText(valueOf));
+        }
+
+        public void write(int b) throws IOException {
+            appendText(String.valueOf((char)b));
+        }
+    }
 }
+
+
