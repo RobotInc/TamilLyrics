@@ -4,8 +4,11 @@ import com.mysql.cj.jdbc.interceptors.ResultSetScannerInterceptor;
 import com.mysql.cj.xdevapi.SqlDataResult;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
 import main.Controller;
 import main.models.album;
+import main.models.song;
+import main.untility.allLyrics;
 import main.untility.observablevalues;
 
 import java.sql.*;
@@ -386,6 +389,43 @@ public class DatabaseHandler{
         }
         return value;
     }
+    public  static String getLyricistName(int id){
+        String query = "SELECT lyricist_name from lyricist WHERE id = '"+id+"'";
+        String value = "";
+        ResultSet resultSet;
+        Statement st;
+        try {
+            st = connect.createStatement();
+            resultSet = st.executeQuery(query);
+            while (resultSet.next()){
+                value = resultSet.getString("lyricisit_name");
+
+            }
+            return value;
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+        return value;
+    }
+    public  static String getGenreName(int id){
+        String query = "SELECT genre_name from genre WHERE id = '"+id+"'";
+        String value = "";
+        ResultSet resultSet;
+        Statement st;
+        try {
+            st = connect.createStatement();
+            resultSet = st.executeQuery(query);
+            while (resultSet.next()){
+                value = resultSet.getString("genre_name");
+
+            }
+            return value;
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+        return value;
+    }
+
     public  static String getHeroinName(int id){
         String query = "SELECT heroin_name from heroin WHERE id = '"+id+"'";
         String value = "";
@@ -517,5 +557,55 @@ public class DatabaseHandler{
 
         return answer;
 
+    }
+
+    public static ObservableList<song> getSongs(int album_id){
+        ObservableList<song> songList = FXCollections.observableArrayList();
+        String query = "Select * from songs where album_id = '"+album_id+"'";
+        Statement st = null;
+        try {
+            st = connect.createStatement();
+            ResultSet set = st.executeQuery(query);
+            while (set.next()){
+                int song_id = set.getInt("id");
+                int a_id = set.getInt("album_id");
+                String song_title = set.getString("song_title");
+                int genre_id = set.getInt("genre_id");
+                int lyricist_id = set.getInt("lyricist_id");
+                String lyrics_one = set.getString("lyrics_one");
+                String lyrics_two = set.getString("lyrics_two");
+                String lyrics_three = set.getString("lyrics_three");
+                String lyrics_four = set.getString("lyrics_four");
+                int trackNo = set.getInt("track_no");
+                String download_link = set.getString("download_link");
+                String genre_name = getGenreName(genre_id);
+                String lyricist_name = getLyricistName(lyricist_id);
+
+                song s = new song();
+                s.setAlbum_id(a_id);
+                s.setSong_id(song_id);
+                s.setSong_title(song_title);
+                s.setGenre(genre_name);
+                s.setLyricist(lyricist_name);
+                s.setDownload_link(download_link);
+                s.setTrackNo(trackNo);
+                allLyrics allLyrics = new allLyrics();
+
+                allLyrics.setEnglish_one(lyrics_one);
+                allLyrics.setEnglish_two(lyrics_two);
+                allLyrics.setTamil_one(lyrics_three);
+                allLyrics.setTamil_two(lyrics_four);
+                s.setLyrics(allLyrics);
+                songList.add(s);
+
+
+
+
+            }
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+
+        return songList;
     }
 }

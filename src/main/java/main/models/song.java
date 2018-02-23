@@ -1,5 +1,7 @@
 package main.models;
 
+import main.untility.allLyrics;
+
 public class song {
 
     int song_id;
@@ -7,13 +9,28 @@ public class song {
     String song_title;
     String genre;
     String lyricist;
-    String english_one;
-    String english_two;
-    String tamil_one;
-    String tamil_two;
+    Number trackNo;
+    allLyrics lyrics;
     String download_link;
 
     public song() {
+    }
+
+
+    public Number getTrackNo() {
+        return trackNo;
+    }
+
+    public void setTrackNo(Number trackNo) {
+        this.trackNo = trackNo;
+    }
+
+    public allLyrics getLyrics() {
+        return lyrics;
+    }
+
+    public void setLyrics(allLyrics lyrics) {
+        this.lyrics = lyrics;
     }
 
     public int getSong_id() {
@@ -56,37 +73,7 @@ public class song {
         this.lyricist = lyricist;
     }
 
-    public String getEnglish_one() {
-        return english_one;
-    }
 
-    public void setEnglish_one(String english_one) {
-        this.english_one = english_one;
-    }
-
-    public String getEnglish_two() {
-        return english_two;
-    }
-
-    public void setEnglish_two(String english_two) {
-        this.english_two = english_two;
-    }
-
-    public String getTamil_one() {
-        return tamil_one;
-    }
-
-    public void setTamil_one(String tamil_one) {
-        this.tamil_one = tamil_one;
-    }
-
-    public String getTamil_two() {
-        return tamil_two;
-    }
-
-    public void setTamil_two(String tamil_two) {
-        this.tamil_two = tamil_two;
-    }
 
     public String getDownload_link() {
         return download_link;
