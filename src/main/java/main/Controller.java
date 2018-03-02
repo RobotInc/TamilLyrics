@@ -8,6 +8,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -19,6 +20,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.stage.*;
@@ -57,17 +59,19 @@ public class Controller {
     private PrintStream ps ;
     @FXML
     ImageView albumimage;
-    ObservableList<song> songtablelist;
+    ObservableList<song> songtablelist = FXCollections.observableArrayList();
     ObservableList createcomboartistlist = FXCollections.observableArrayList();
     ObservableList createcomboherolist = FXCollections.observableArrayList();
     ObservableList createcomboheroinlist = FXCollections.observableArrayList();
     ObservableList<album> albumlistview = FXCollections.observableArrayList();
     ObservableList<String> albumnameList = FXCollections.observableArrayList();
-
+    int presentSelectedAlbumId = 0;
     private static final Logger LOG = Logger.getLogger(String.valueOf(Controller.class));
 
     public ObservableList<String> lyricistlist = FXCollections.observableArrayList();
     public ObservableList<String> genrelist = FXCollections.observableArrayList();
+    public ObservableList<String> lyricistlistTable = FXCollections.observableArrayList();
+    public ObservableList<String> genrelistTable = FXCollections.observableArrayList();
 
 
     @FXML
@@ -135,11 +139,11 @@ public class Controller {
 
         if(!(Boolean) reponse.get("error")){
 
-            System.out.println("connec to database\n");
+            System.out.println("connected to database\n");
             DatabaseHandler.setListsFromDatabase();
             DatabaseHandler.getAlbums();
             setAll();
-
+            initTable();
         }else {
             status.setText("Status: Error Connecting");
 
@@ -163,17 +167,21 @@ public class Controller {
                 }else {
                    if(year.getText().length()==4&&albumname.getText().length()>0){
                        if(albumid.getText().length()==0) {
-                           System.out.println(albumname.getText());
-                           System.out.println(comboartist.getSelectionModel().getSelectedItem().toString());
-                           System.out.println(combohero.getSelectionModel().getSelectedItem().toString());
-                           System.out.println(comboheroin.getSelectionModel().getSelectedItem().toString());
+                           System.out.print(albumname.getText());
+                           System.out.print(comboartist.getSelectionModel().getSelectedItem().toString());
+                           System.out.print(combohero.getSelectionModel().getSelectedItem().toString());
+                           System.out.print(comboheroin.getSelectionModel().getSelectedItem().toString());
 
-                           System.out.println(year.getText().toString());
+                           System.out.print(year.getText().toString()+"\n");
                            reponse = DatabaseHandler.insertAlbum(Helper.FirstLetterCaps(albumname.getText().toString()), comboartist.getSelectionModel().getSelectedItem().toString(), combohero.getSelectionModel().getSelectedItem().toString(), comboheroin.getSelectionModel().getSelectedItem().toString(), Integer.parseInt(year.getText().toLowerCase()));
 
                            if (!(Boolean) reponse.get("error")) {
                                status.setText((String) reponse.get("message"));
                                albumid.setText(String.valueOf(reponse.get("album_id")));
+                               DatabaseHandler.getAlbums();
+                               albumview.getItems().clear();
+                               albumview.setItems(observablevalues.getAlbumNameList());
+
                            } else {
                                status.setText((String) reponse.get("message"));
                            }
@@ -195,13 +203,13 @@ public class Controller {
 
                 album  a = DatabaseHandler.getAlbum(newValue);
                 if(a!=null){
-                    System.out.println(a.getAlbum_id());
-                    System.out.println(a.getAlbum_name());
-                    System.out.println(a.getArtist_id());
-                    System.out.println(a.getHero_id());
-                    System.out.println(a.getHeroin_id());
-                    System.out.println(a.getYear());
-                    System.out.println(a.getImage_link());
+                    System.out.print(a.getAlbum_id());
+                    System.out.print(a.getAlbum_name());
+                    System.out.print(a.getArtist_id());
+                    System.out.print(a.getHero_id());
+                    System.out.print(a.getHeroin_id());
+                    System.out.print(a.getYear());
+                    System.out.print(a.getImage_link());
 
                     albumid.setText(getInt(a.getAlbum_id()));
                     albumname.setText(a.getAlbum_name());
@@ -254,12 +262,15 @@ public class Controller {
                     year.setText(String.valueOf(a.getYear()));
                     albumset = true;
 
+                    songtablelist.clear();
                     ObservableList<song> songlist = DatabaseHandler.getSongs(a.getAlbum_id());
                     for(song s : songlist){
-                        print(s);
+                        songtablelist.add(s);
                     }
                     setTableCombo();
-                    setSongTable(songlist,a.getAlbum_id());
+                    presentSelectedAlbumId = a.getAlbum_id();
+                    setSongTable(a.getAlbum_id());
+
 
                 }
 
@@ -325,6 +336,8 @@ public class Controller {
                 comboheroin.getSelectionModel().selectLast();
                 albumset = false;
                 albumview.getSelectionModel().clearSelection();
+
+                songtable.getItems().clear();
             }
         });
         try {
@@ -343,38 +356,28 @@ public class Controller {
 
     }
 
-
-
-    private void setSongTable(ObservableList<song> songlist,int a_id) {
-        ObservableList<song> songtablelist = songlist;
-        if(songtablelist.isEmpty()){
-            song s = new song();
-            s.setAlbum_id(a_id);
-            print(s);
-            songtablelist.add(s);
-        }
-
-        TableColumn<song,Integer> song_id = new TableColumn("Song Id");
-        song_id.setCellValueFactory(new PropertyValueFactory<song,Integer>("song_id"));
-        TableColumn<song,Integer> album_id = new TableColumn("Album Id");
-        album_id.setCellValueFactory(new PropertyValueFactory<song,Integer>("album_id"));
+    private void initTable(){
+        TableColumn<song,String> song_id = new TableColumn("Song Id");
+        song_id.setCellValueFactory(new PropertyValueFactory<song,String>("song_id"));
+        TableColumn<song,String> album_id = new TableColumn("Album Id");
+        album_id.setCellValueFactory(new PropertyValueFactory<song,String>("album_id"));
         TableColumn<song,String> song_title = new TableColumn("Song Title");
         song_title.setCellValueFactory(new PropertyValueFactory<song,String>("song_title"));
         song_title.setCellFactory(TextFieldTableCell.<song> forTableColumn());
         song_title.setStyle("-fx-alignment: CENTER;");
         TableColumn<song,String> genre = new TableColumn("Genre");
         genre.setCellValueFactory(new PropertyValueFactory<song,String>("genre"));
-
+        genre.setCellFactory(ComboBoxTableCell.forTableColumn(genrelistTable));
         genre.setStyle("-fx-alignment: CENTER;");
         TableColumn<song,String> lyricist = new TableColumn("Lyricist");
-
-        lyricist.setStyle("-fx-alignment: CENTER;");
+        lyricist.setCellFactory(ComboBoxTableCell.forTableColumn(lyricistlistTable));
         lyricist.setCellValueFactory(new PropertyValueFactory<song,String>("lyricist"));
+        lyricist.setStyle("-fx-alignment: CENTER;");
         TableColumn<song,String> Lyrics = new TableColumn("Lyrics");
         Lyrics.setStyle("-fx-alignment: CENTER;");
-        TableColumn<song,Number> trackNo = new TableColumn("Track No");
-        trackNo.setCellValueFactory(new PropertyValueFactory<song,Number>("trackno"));
-        trackNo.setCellFactory(TextFieldTableCell.<song,Number> forTableColumn(new NumberStringConverter()));
+        TableColumn<song,String> trackNo = new TableColumn("Track No");
+        trackNo.setCellValueFactory(new PropertyValueFactory<song,String>("trackNo"));
+        trackNo.setCellFactory(TextFieldTableCell.<song> forTableColumn());
         trackNo.setStyle("-fx-alignment: CENTER;");
         TableColumn<song,String> download_link = new TableColumn("Download Link");
         download_link.setCellValueFactory(new PropertyValueFactory<song,String>("download_link"));
@@ -393,65 +396,17 @@ public class Controller {
             }
         });
 
-        genre.setCellFactory(param -> new TableCell<song, String>() {
+
+
+        trackNo.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<song, String>>() {
             @Override
-            protected void updateItem(String item, boolean empty) {
-                song s = (song) getTableRow().getItem();
-                super.updateItem(item, empty);
-                if (empty) {
-                    setText(null);
-                } else {
-                    ComboBox<String> cb = new ComboBox<>(genrelist);
-                    if(s.getGenre()==null){
-                        cb.getSelectionModel().select("None");
-                    }else {
-                        cb.getSelectionModel().select(s.getGenre());
-                    }
+            public void handle(TableColumn.CellEditEvent<song, String> event) {
+                TablePosition<song, String> pos = event.getTablePosition();
 
-                    cb.getSelectionModel().selectedItemProperty().addListener((ChangeListener<String>) (observable, oldValue, newValue) -> {
-                        s.setGenre(newValue);
-                        System.out.println(s.getGenre());
-                    });
-                    setGraphic(cb);
-                    setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-                }
-            }
-        });
-
-        lyricist.setCellFactory(param -> new TableCell<song, String>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                song s = (song) getTableRow().getItem();
-                super.updateItem(item, empty);
-                if (empty) {
-                    setText(null);
-                } else {
-                    ComboBox<String> cb = new ComboBox<>(lyricistlist);
-                    if(s.getLyricist()==null){
-                        cb.getSelectionModel().select("None");
-                    }else {
-                        cb.getSelectionModel().select(s.getLyricist());
-                    }
-
-                    cb.getSelectionModel().selectedItemProperty().addListener((ChangeListener<String>) (observable, oldValue, newValue) -> {
-                        s.setLyricist(newValue);
-                        System.out.println(s.getLyricist());
-                    });
-                    setGraphic(cb);
-                    setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-                }
-            }
-        });
-
-        trackNo.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<song, Number>>() {
-            @Override
-            public void handle(TableColumn.CellEditEvent<song, Number> event) {
-                TablePosition<song, Number> pos = event.getTablePosition();
-
-                Number songtitle = event.getNewValue();
+                String TrackNo = event.getNewValue();
                 int row = pos.getRow();
                 song i = event.getTableView().getItems().get(row);
-                i.setTrackNo(songtitle);
+                i.setTrackNo(TrackNo);
                 print(i);
             }
         });
@@ -537,10 +492,61 @@ public class Controller {
         Lyrics.setCellFactory(cellFactory);
 
         songtable.getColumns().addAll(song_id,album_id,song_title,genre,lyricist,Lyrics,trackNo,download_link,upload);
+        songtable.setColumnResizePolicy(javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY);
         songtable.setItems(songtablelist);
         songtable.setEditable(true);
 
-        songtable.setRowFactory(new Callback<TableView<song>, TableRow<song>>() {
+        ContextMenu menu = new ContextMenu();
+        MenuItem add = new MenuItem("Add Item");
+        add.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                //addNewRow();
+
+                song s = new song();
+                s.setDefaultToAll();
+                s.setAlbum_id(String.valueOf(presentSelectedAlbumId));
+                songtablelist.add(s);
+                songtable.refresh();
+            }
+        });
+        MenuItem delete = new MenuItem("delete Item");
+        delete.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                songtablelist.remove(songtable.getSelectionModel().getSelectedIndex());
+               songtable.refresh();
+            }
+        });
+        menu.getItems().addAll(add,delete);
+
+        songtable.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+
+            @Override
+            public void handle(MouseEvent t) {
+                if(t.getButton() == MouseButton.SECONDARY) {
+                    if(!songtable.getItems().isEmpty()) {
+                        if(songtable.getItems().size()<2){
+                            delete.setDisable(true);
+                            menu.show(songtable, t.getScreenX(), t.getScreenY());
+                            System.out.println("Table row  selected "+((TableView<song>)t.getSource()).getSelectionModel().getSelectedIndex());
+                        }else {
+                            if(delete.isDisable()){
+                                delete.setDisable(false);
+                            }
+                            menu.show(songtable, t.getScreenX(), t.getScreenY());
+                            System.out.println("Table row  selected "+((TableView<song>)t.getSource()).getSelectionModel().getSelectedIndex());
+                        }
+
+                    }
+                }else if(t.getButton() == MouseButton.PRIMARY){
+                    if(menu.isShowing()){
+                        menu.hide();
+                    }
+                }
+            }
+        });
+       /* songtable.setRowFactory(new Callback<TableView<song>, TableRow<song>>() {
             @Override
             public TableRow<song> call(TableView<song> param) {
 
@@ -550,9 +556,12 @@ public class Controller {
                 add.setOnAction(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
-                        song newSongRow = new song();
-                        newSongRow.setAlbum_id(a_id);
-                        songtablelist.add(newSongRow);
+                        //addNewRow();
+
+                        song s = new song();
+                        s.setDefaultToAll();
+                        s.setAlbum_id(String.valueOf(presentSelectedAlbumId));
+                        songtablelist.add(s);
                     }
                 });
                 MenuItem delete = new MenuItem("delete Item");
@@ -565,6 +574,7 @@ public class Controller {
                 });
                 menu.getItems().addAll(add,delete);
                 if (songtablelist.size()<2){
+                    System.out.println("song table length :"+songtablelist.size());
                     delete.setDisable(true);
                     row.contextMenuProperty().bind(
                             Bindings.when(row.emptyProperty())
@@ -572,6 +582,7 @@ public class Controller {
                                     .otherwise(menu)
                     );
                 }else {
+                    System.out.println("called this full");
                     row.contextMenuProperty().bind(
                             Bindings.when(row.emptyProperty())
                                     .then((ContextMenu)null)
@@ -581,7 +592,24 @@ public class Controller {
 
                 return row;
             }
-        });
+        });*/
+
+
+    }
+
+
+    private void setSongTable(int a_id) {
+
+        if(songtablelist.isEmpty()){
+            song s = new song();
+            s.setDefaultToAll();
+            s.setAlbum_id(String.valueOf(a_id));
+            songtablelist.add(s);
+        }
+
+
+
+
 
     }
 
@@ -619,12 +647,20 @@ public class Controller {
 
     }
     public void setTableCombo(){
-        genrelist = observablevalues.getGenrelist();
-        lyricistlist = observablevalues.getLyricistlist();
-        genrelist.add("None");
-        genrelist.remove("Select Genre (Default All)");
-        lyricistlist.remove("Select Lyricist (Default All)");
-        lyricistlist.add("None");
+        genrelistTable.clear();
+        lyricistlistTable.clear();
+        for(Object s : observablevalues.getGenrelist()){
+            genrelistTable.add(String.valueOf(s));
+        }
+        for(Object s : observablevalues.getLyricistlist()){
+            lyricistlistTable.add(String.valueOf(s));
+        }
+        genrelistTable = observablevalues.getGenrelist();
+        lyricistlistTable = observablevalues.getLyricistlist();
+        genrelistTable.add("None");
+        lyricistlistTable.add("None");
+
+
     }
 
     private String getInt(int value){
@@ -647,74 +683,7 @@ public class Controller {
     }
 
 
-    public class IntegerEditingCell extends TableCell<song, Number> {
 
-        private final TextField textField = new TextField();
-        private final Pattern intPattern = Pattern.compile("-?\\d+");
-
-        public IntegerEditingCell() {
-            textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-                if (! isNowFocused) {
-                    processEdit();
-                }
-            });
-            textField.setOnAction(event -> processEdit());
-        }
-
-        private void processEdit() {
-            String text = textField.getText();
-            if (intPattern.matcher(text).matches()) {
-                commitEdit(Integer.parseInt(text));
-            } else {
-                cancelEdit();
-            }
-        }
-
-        @Override
-        public void updateItem(Number value, boolean empty) {
-            super.updateItem(value, empty);
-            if (empty) {
-                setText(null);
-                setGraphic(null);
-            } else if (isEditing()) {
-                setText(null);
-                textField.setText(value.toString());
-                setGraphic(textField);
-            } else {
-                if(value!=null){
-                    setText(value.toString());
-                    setGraphic(null);
-                }
-
-            }
-        }
-
-        @Override
-        public void startEdit() {
-            super.startEdit();
-            Number value = getItem();
-            if (value != null) {
-                textField.setText(value.toString());
-                setGraphic(textField);
-
-                setText(null);
-            }
-        }
-
-        @Override
-        public void cancelEdit() {
-            super.cancelEdit();
-            setText(getItem().toString());
-            setGraphic(null);
-        }
-
-        // This seems necessary to persist the edit on loss of focus; not sure why:
-        @Override
-        public void commitEdit(Number value) {
-            super.commitEdit(value);
-            ((song)this.getTableRow().getItem()).setTrackNo(value.intValue());
-        }
-    }
 
     public void print(song s){
         System.out.print(s.getAlbum_id()+" ");

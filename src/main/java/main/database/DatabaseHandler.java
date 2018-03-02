@@ -463,6 +463,7 @@ public class DatabaseHandler{
 
     public static void getAlbums(){
         ObservableList<String> list =FXCollections.observableArrayList();
+        observablevalues.getAlbumNameList().clear();
         String query = "Select album_name from albums";
         try{
             Statement st = connect.createStatement();
@@ -581,14 +582,15 @@ public class DatabaseHandler{
                 String genre_name = getGenreName(genre_id);
                 String lyricist_name = getLyricistName(lyricist_id);
 
-                song s = new song();
-                s.setAlbum_id(a_id);
-                s.setSong_id(song_id);
-                s.setSong_title(song_title);
-                s.setGenre(genre_name);
-                s.setLyricist(lyricist_name);
-                s.setDownload_link(download_link);
-                s.setTrackNo(trackNo);
+                song s = new song(
+                        String.valueOf(a_id),
+                        String.valueOf(song_id),
+                        song_title,
+                        genre_name,
+                        lyricist_name,
+                        download_link,
+                        String.valueOf(trackNo));
+
                 allLyrics allLyrics = new allLyrics();
 
                 allLyrics.setEnglish_one(lyrics_one);
