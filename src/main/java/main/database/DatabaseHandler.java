@@ -294,9 +294,92 @@ public class DatabaseHandler{
 
     }
 
+    public static HashMap<String,Object> insertSong(song i){
+
+        int album_id = Integer.parseInt(i.getAlbum_id());
+        int track_no = Integer.parseInt(i.getTrackNo());
+        int genre_id = getGenreId(i.getGenre());
+        int lyricist_id = getLyricistId(i.getLyricist());
+        if(genre_id>0&&lyricist_id>0){
+
+            try {
+
+                String query = "INSERT INTO songs(album_id,song_title,lyrics_one,lyrics_two,lyrics_three,lyrics_four,genre_id,lyricist_id,track_no)" +
+                        "VALUES(?,?,?,?,?)";
+                PreparedStatement ps = connect.prepareStatement(query);
+                ps.setInt(1,album_id);
+                ps.setString(2,i.getSong_title());
+                ps.setString(3,i.getLyrics().getEnglish_one());
+                ps.setString(4,i.getLyrics().getEnglish_two());
+                ps.setString(5,i.getLyrics().getTamil_one());
+                ps.setString(6,i.getLyrics().getTamil_two());
+                ps.setInt(7,genre_id);
+                ps.setInt(8,lyricist_id);
+                ps.setInt(9,track_no);
+
+
+                ps.executeUpdate();
+
+                response.put("error",false);
+                response.put("message","Successfully inserted the album");
+                response.put("song_id",getSongId(i.getSong_title()));
+
+            } catch (SQLException e) {
+                response.put("error",true);
+                response.put("message",e.getMessage());
+                e.printStackTrace();
+            }
+
+        }else {
+
+            response.put("error",true);
+            response.put("message","all fields required");
+        }
+
+        return response;
+
+    }
+
 
     public  static int getArtistId(String artist_name){
         String query = "SELECT id from artist WHERE artist_name = '"+artist_name+"'";
+        int value = 0;
+        ResultSet resultSet;
+        Statement st;
+        try {
+            st = connect.createStatement();
+            resultSet = st.executeQuery(query);
+            while (resultSet.next()){
+                value = resultSet.getInt("id");
+
+            }
+            return value;
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+        return value;
+    }
+
+    public  static int getGenreId(String genre_name){
+        String query = "SELECT id from genre WHERE genre_name = '"+genre_name+"'";
+        int value = 0;
+        ResultSet resultSet;
+        Statement st;
+        try {
+            st = connect.createStatement();
+            resultSet = st.executeQuery(query);
+            while (resultSet.next()){
+                value = resultSet.getInt("id");
+
+            }
+            return value;
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+        return value;
+    }
+    public  static int getLyricistId(String lyricist_name){
+        String query = "SELECT id from lyricist WHERE lyricist_name = '"+lyricist_name+"'";
         int value = 0;
         ResultSet resultSet;
         Statement st;
@@ -461,6 +544,22 @@ public class DatabaseHandler{
         return id;
     }
 
+    public static int getSongId(String song_title){
+        int id = 0;
+        String query = "SELECT id FROM songs WHERE song_title = '"+song_title+"'";
+        try {
+            Statement st = connect.createStatement();
+            ResultSet rs = st.executeQuery(query);
+            while (rs.next()){
+                id = rs.getInt("id");
+            }
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+
+        return id;
+    }
+
     public static void getAlbums(){
         ObservableList<String> list =FXCollections.observableArrayList();
         observablevalues.getAlbumNameList().clear();
@@ -609,5 +708,18 @@ public class DatabaseHandler{
         }
 
         return songList;
+    }
+
+    public static void uploadDownloadLink(String link,int song_id){
+        String update = "UPDATE songs set download_link = ? WHERE song_id = ?";
+        try {
+            PreparedStatement ps = connect.prepareStatement(update);
+            ps.setString(1,link);
+            ps.setInt(2,song_id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
     }
 }

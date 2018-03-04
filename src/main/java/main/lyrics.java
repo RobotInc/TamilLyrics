@@ -24,6 +24,7 @@ public class lyrics {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 ObserveLyrics.getLyrics().put("englishone",newValue);
+                ObserveLyrics.getLyrics().put("edited","yes");
             }
         });
 
@@ -31,6 +32,7 @@ public class lyrics {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 ObserveLyrics.getLyrics().put("tamilone",newValue);
+                ObserveLyrics.getLyrics().put("edited","yes");
             }
         });
 
@@ -38,6 +40,7 @@ public class lyrics {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 ObserveLyrics.getLyrics().put("englishtwo",newValue);
+                ObserveLyrics.getLyrics().put("edited","yes");
             }
         });
 
@@ -45,6 +48,7 @@ public class lyrics {
             @Override
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
                 ObserveLyrics.getLyrics().put("tamiltwo",newValue);
+                ObserveLyrics.getLyrics().put("edited","yes");
             }
         });
     }

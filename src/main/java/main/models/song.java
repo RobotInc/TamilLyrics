@@ -12,6 +12,8 @@ public class song {
     String trackNo;
     allLyrics lyrics;
     String download_link;
+    String localSongPath;
+
 
     public song(String song_id, String album_id, String song_title, String genre, String lyricist, String trackNo, String download_link) {
         this.song_id = song_id;
@@ -21,6 +23,14 @@ public class song {
         this.lyricist = lyricist;
         this.trackNo = trackNo;
         this.download_link = download_link;
+    }
+
+    public String getLocalSongPath() {
+        return localSongPath;
+    }
+
+    public void setLocalSongPath(String localSongPath) {
+        this.localSongPath = localSongPath;
     }
 
     public song() {
@@ -97,6 +107,14 @@ public class song {
         this.setGenre("none");
         this.setLyricist("none");
         this.setTrackNo("0");
+        allLyrics lyrics = new allLyrics();
+        lyrics.setEnglish_one("");
+        lyrics.setEnglish_two("");
+        lyrics.setTamil_one("");
+        lyrics.setTamil_two("");
+        this.setLyrics(lyrics);
+        this.setLocalSongPath("");
+
         this.setDownload_link("none");
     }
 }

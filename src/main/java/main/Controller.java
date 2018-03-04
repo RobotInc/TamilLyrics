@@ -32,6 +32,7 @@ import main.ftp.FTPUploader;
 import main.models.album;
 import main.models.song;
 import main.untility.Helper;
+import main.untility.ObserveLyrics;
 import main.untility.observablevalues;
 import org.controlsfx.control.StatusBar;
 
@@ -105,8 +106,9 @@ public class Controller {
 
 
         ps = new PrintStream(new Console(logarea));
-        System.setOut(ps);
-        System.setErr(ps);
+        ObserveLyrics.init();
+        //System.setOut(ps);
+        //System.setErr(ps);
         add.setOnAction(new EventHandler<ActionEvent>() {
            public void handle(ActionEvent actionEvent) {
                try {
@@ -392,7 +394,16 @@ public class Controller {
                 int row = pos.getRow();
                 song i = event.getTableView().getItems().get(row);
                 i.setSong_title(songtitle);
-                print(i);
+                //print(i);
+
+
+                if(Integer.parseInt(i.getSong_id())>0){
+                    System.out.println("am in first");
+
+                }else {
+
+                    InserSong(i);
+                }
             }
         });
 
@@ -407,7 +418,14 @@ public class Controller {
                 int row = pos.getRow();
                 song i = event.getTableView().getItems().get(row);
                 i.setTrackNo(TrackNo);
-                print(i);
+
+                if(Integer.parseInt(i.getSong_id())>0){
+
+
+                }else {
+
+                    InserSong(i);
+                }
             }
         });
 
@@ -423,7 +441,13 @@ public class Controller {
 
                 i.setLyricist(lyricistname);
 
-                print(i);
+                if(Integer.parseInt(i.getSong_id())>0){
+
+
+                }else {
+
+                   InserSong(i);
+                }
             }
         });
         genre.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<song, String>>() {
@@ -437,7 +461,13 @@ public class Controller {
 
                 i.setGenre(genrename);
 
-                print(i);
+
+                if(Integer.parseInt(i.getSong_id())>0){
+
+
+                }else {
+                    InserSong(i);
+                }
             }
         });
         Callback<TableColumn<song, String>, TableCell<song, String>> cellFactory
@@ -458,7 +488,37 @@ public class Controller {
                                 } else {
                                     btn.setOnAction(event -> {
                                         try {
+                                            System.out.println("row index for lyrics "+getTableRow().getIndex());
+                                            HashMap<String,String> lyrics = new HashMap<>();
+                                            song s = (song)getTableRow().getItem();
+                                            int i = 0;
+                                            if(s.getLyrics().getEnglish_one()!=null){
+                                                lyrics.put("englishone",s.getLyrics().getEnglish_one());
+                                            }else {
+                                                lyrics.put("englishone","");
+                                            }
 
+                                            if(s.getLyrics().getEnglish_two()!=null){
+                                                lyrics.put("englishtwo",s.getLyrics().getEnglish_two());
+                                            }else {
+                                                lyrics.put("englishtwo","");
+                                            }
+
+                                            if(s.getLyrics().getTamil_one()!=null){
+                                                lyrics.put("tamilone",s.getLyrics().getTamil_one());
+                                            }else {
+                                                lyrics.put("tamilone","");
+                                            }
+
+                                            if(s.getLyrics().getTamil_two()!=null){
+                                                lyrics.put("tamiltwo",s.getLyrics().getTamil_two());
+                                            }else {
+                                                lyrics.put("tamiltwo","");
+                                            }
+
+
+
+                                            ObserveLyrics.setLyrics(lyrics);
                                             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/lyrics.fxml"));
 
                                             Parent root1 = null;
@@ -468,12 +528,29 @@ public class Controller {
                                             stage.initStyle(StageStyle.DECORATED);
                                             stage.setTitle("Set Lyrics");
                                             stage.setScene(new Scene(root1));
-                                            stage.setMaximized(false);
-                                            stage.setResizable(false);
+                                            stage.setMaximized(true);
+
                                             stage.show();
                                             stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
                                                 public void handle(WindowEvent windowEvent) {
-                                                    print((song) getTableRow().getItem());
+
+                                                        HashMap<String,String> editedlyrics = ObserveLyrics.getLyrics();
+                                                        song s = (song)getTableRow().getItem();
+                                                        s.getLyrics().setEnglish_one(editedlyrics.get("englishone"));
+                                                        s.getLyrics().setEnglish_two(editedlyrics.get("englishtwo"));
+                                                        s.getLyrics().setTamil_one(editedlyrics.get("tamilone"));
+                                                        s.getLyrics().setTamil_two(editedlyrics.get("tamiltwo"));
+
+                                                    if(Integer.parseInt(s.getSong_id())>0){
+
+
+                                                    }else {
+
+                                                       InserSong(s);
+                                                    }
+
+
+
                                                 }
                                             });
                                         } catch (IOException e) {
@@ -489,6 +566,89 @@ public class Controller {
                     }
                 };
 
+
+        Callback<TableColumn<song, String>, TableCell<song, String>> selectSong
+                = //
+                new Callback<TableColumn<song, String>, TableCell<song, String>>() {
+                    @Override
+                    public TableCell call(final TableColumn<song, String> param) {
+                        final TableCell<song, String> cell = new TableCell<song, String>() {
+
+                            final Button btn = new Button("Select Song to upload");
+
+                            @Override
+                            public void updateItem(String item, boolean empty) {
+                                super.updateItem(item, empty);
+                                if (empty) {
+                                    setGraphic(null);
+                                    setText(null);
+                                } else {
+                                    btn.setOnAction(event -> {
+                                        FileChooser fileChooser = new FileChooser();
+
+                                        //Set extension filter
+                                        FileChooser.ExtensionFilter extFilterOGG = new FileChooser.ExtensionFilter("OGG files (*.ogg)", "*.ogg");
+                                        fileChooser.getExtensionFilters().addAll(extFilterOGG);
+
+                                        //Show open file dialog
+                                        File file = fileChooser.showOpenDialog(null);
+                                        song s = (song) getTableRow().getItem();
+                                        Thread t = new Thread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if(file != null) {
+                                                    s.setLocalSongPath(file.getAbsolutePath());
+                                                    System.out.println(file.getAbsolutePath());
+
+                                                    try {
+                                                        if (ftpUploader.checkDirectoryExists(s.getAlbum_id())) {
+                                                            System.out.println("album folder present");
+                                                        } else {
+                                                            ftpUploader.mkdir(s.getAlbum_id());
+                                                        }
+                                                    } catch (IOException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                }else {
+                                                    System.out.println("no file selected");
+                                                }
+                                            }
+                                        });
+                                        t.start();
+
+
+                                        if(Integer.parseInt(s.getSong_id())>0){
+
+
+                                        }else {
+
+                                            InserSong(s);
+                                        }
+
+
+                                        //BufferedImage bufferedImage = ImageIO.read(file);
+                                        //Image image = SwingFXUtils.toFXImage(bufferedImage, null);
+
+
+                                           /* try {
+                                                ftpUploader.uploadFile(file.getAbsolutePath(),"/"+file.getName(),"/img");
+                                                DatabaseHandler.setImageLink(Integer.parseInt(albumid.getText()));
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }*/
+
+
+                                    });
+                                    setGraphic(btn);
+                                    setText(null);
+                                }
+                            }
+                        };
+                        return cell;
+                    }
+                };
+
+        upload.setCellFactory(selectSong);
         Lyrics.setCellFactory(cellFactory);
 
         songtable.getColumns().addAll(song_id,album_id,song_title,genre,lyricist,Lyrics,trackNo,download_link,upload);
@@ -497,7 +657,7 @@ public class Controller {
         songtable.setEditable(true);
 
         ContextMenu menu = new ContextMenu();
-        MenuItem add = new MenuItem("Add Item");
+        MenuItem add = new MenuItem("Add Song Row");
         add.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -510,7 +670,7 @@ public class Controller {
                 songtable.refresh();
             }
         });
-        MenuItem delete = new MenuItem("delete Item");
+        MenuItem delete = new MenuItem("Delete This song from database");
         delete.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -518,6 +678,8 @@ public class Controller {
                songtable.refresh();
             }
         });
+
+
         menu.getItems().addAll(add,delete);
 
         songtable.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
@@ -655,10 +817,12 @@ public class Controller {
         for(Object s : observablevalues.getLyricistlist()){
             lyricistlistTable.add(String.valueOf(s));
         }
-        genrelistTable = observablevalues.getGenrelist();
-        lyricistlistTable = observablevalues.getLyricistlist();
-        genrelistTable.add("None");
-        lyricistlistTable.add("None");
+
+        lyricistlistTable.remove("Select Lyricist (Default All)");
+        genrelistTable.remove("Select Genre (Default All)");
+        genrelistTable.add("none");
+        lyricistlistTable.add("none");
+
 
 
     }
@@ -691,12 +855,44 @@ public class Controller {
         System.out.print(s.getSong_title()+" ");
         System.out.print(s.getGenre()+" ");
         System.out.print(s.getLyricist()+" ");
+        System.out.print(s.getLyrics().getEnglish_one().length()+" ");
+        System.out.print(s.getLyrics().getEnglish_two().length()+" ");
+        System.out.print(s.getLyrics().getTamil_one().length()+" ");
+        System.out.print(s.getLyrics().getTamil_two().length()+" ");
+
         System.out.print(s.getTrackNo());
+        System.out.print(s.getLocalSongPath());
         System.out.println();
 
 
 
     }
+
+    public void InserSong(song i){
+        String english_one = i.getLyrics().getEnglish_one();
+        String english_two = i.getLyrics().getEnglish_two();
+        String tamil_one = i.getLyrics().getTamil_one();
+        String tamil_two = i.getLyrics().getTamil_two();
+        if((i.getSong_title().length()>0)&&(i.getLyricist() !="none")&&(i.getGenre()!="none")&&(english_one!="")&&(english_two!="")&&(tamil_one!="")&&(tamil_two!="")&&(i.getTrackNo()!="0")&&(i.getLocalSongPath()!="")){
+                print(i);
+                reponse = DatabaseHandler.insertSong(i);
+                if(!(boolean)reponse.get("error")){
+                    System.out.println("song id = "+reponse.get("song_id"));
+                    i.setSong_id(String.valueOf(reponse.get("song_id")));
+                    File remoteFile = new File(i.getSong_id()+".ogg");
+                    try {
+                        ftpUploader.uploadFile(i.getLocalSongPath(),remoteFile.getName(),"/"+i.getAlbum_id());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }else {
+                System.out.println("not passed");
+                print(i);
+            }
+        }
+
 }
 
 

@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import org.apache.commons.net.PrintCommandListener;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
 public class FTPUploader {
@@ -35,6 +36,41 @@ public class FTPUploader {
 
         }
     }
+
+    public boolean mkdir(String album_id){
+        boolean answer = false;
+
+
+
+        try{
+            String dir = "/"+album_id;
+            answer = ftp.makeDirectory(dir);
+            showServerReply(ftp);
+            return answer;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return answer;
+
+    }
+    private static void showServerReply(FTPClient ftpClient) {
+        String[] replies = ftpClient.getReplyStrings();
+        if (replies != null && replies.length > 0) {
+            for (String aReply : replies) {
+                System.out.println("SERVER: " + aReply);
+            }
+        }
+    }
+
+    public boolean checkDirectoryExists(String file) throws IOException {
+        FTPFile[] files = ftp.listDirectories();
+        for (FTPFile ftpfile : files) {
+            if( ftpfile.getName().endsWith(file)) return true;
+        }
+        return false;
+    }
+
 
     public void disconnect(){
         if (this.ftp.isConnected()) {
