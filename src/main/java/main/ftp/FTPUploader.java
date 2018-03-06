@@ -5,17 +5,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 
+import main.untility.UploadStats;
 import org.apache.commons.net.PrintCommandListener;
-import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPFile;
-import org.apache.commons.net.ftp.FTPReply;
+import org.apache.commons.net.ftp.*;
+import org.apache.commons.net.io.CopyStreamAdapter;
 
 public class FTPUploader {
 
+    File file;
     FTPClient ftp = null;
-
+    private final UploadStats uploadStats = new UploadStats();
+    CopyStreamAdapter copyStreamAdapter = new CopyStreamAdapter() {
+        @Override
+        public void bytesTransferred(long totalBytesTransferred, int bytesTransferred, long streamSize) {
+           // updateUploadStats(totalBytesTransferred, bytesTransferred, streamSize);
+            System.out.println(totalBytesTransferred*100/file.length());
+        }
+    };
     public FTPUploader(String host, String user, String pwd) throws Exception{
+
+
         ftp = new FTPClient();
         ftp.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
         int reply;
@@ -25,12 +34,14 @@ public class FTPUploader {
             ftp.disconnect();
             throw new Exception("Exception in connecting to FTP Server");
         }
+        ftp.setCopyStreamListener(copyStreamAdapter);
         ftp.login(user, pwd);
         ftp.setFileType(FTP.BINARY_FILE_TYPE);
         ftp.enterLocalPassiveMode();
     }
-    public void uploadFile(String localFileFullName, String fileName, String hostDir)
+    public void uploadFile(String localFileFullName, String fileName, String hostDir,File file)
             throws Exception {
+        this.file = file;
         try(InputStream input = new FileInputStream(new File(localFileFullName))){
             this.ftp.storeFile(hostDir + fileName, input);
 
@@ -91,5 +102,27 @@ public class FTPUploader {
         ftpUploader.disconnect();
         System.out.println("Done");
     }*/
+
+    private void updateUploadStats(long totalBytesTransferred, int bytesTransferred, long streamSize) {
+        long current = System.currentTimeMillis();
+
+        synchronized (this.uploadStats) {
+            long timeTaken = (current - uploadStats.getStartTime());
+
+
+            if (timeTaken > 1000L) {
+                uploadStats.setLastUpdated(current);
+                uploadStats.setEstimatedSpeed(totalBytesTransferred / (timeTaken/1000L));
+            }
+
+            uploadStats.setTotalBytesTransferred(totalBytesTransferred);
+            uploadStats.setBytesTransferred(bytesTransferred);
+            uploadStats.setStreamSize(streamSize);
+            System.out.println("Total bytes transfered : "+uploadStats.getTotalBytesTransferred());
+            System.out.println("bytes transfered : "+uploadStats.getBytesTransferred());
+            System.out.println("Stream Size : "+uploadStats.getStreamSize());
+
+        }
+    }
 
 }

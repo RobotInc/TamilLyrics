@@ -58,3 +58,22 @@ CREATE TABLE songs(
         CHARACTER set UTF8
         COLLATE utf8mb4_unicode_ci
 
+CREATE TABLE songs(
+        id int PRIMARY KEY AUTO_INCREMENT,
+        album_id int not null,
+        FOREIGN KEY fk_albums(album_id)
+        REFERENCES albums(id),
+        song_title varchar(255) not null,
+        download_link text null,
+        lyrics_one text not null,
+        lyrics_two text not null,
+        lyrics_three text not null,
+        lyrics_four text not null,
+        genre_id int null,
+        FOREIGN KEY fk_genre(genre_id)
+        REFERENCES genre(id),
+        lyricist_id int,
+        FOREIGN KEY fk_lyricist(lyricist_id)
+        REFERENCES lyricist(id),
+        track_no int)
+        COLLATE utf8mb4_unicode_ci

@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import main.Controller;
 import main.models.album;
 import main.models.song;
+import main.untility.Helper;
 import main.untility.allLyrics;
 import main.untility.observablevalues;
 
@@ -63,6 +64,7 @@ public class DatabaseHandler{
 
 
     final static  String imgLink = "https://beyonitysoftwares.cf/tamillyrics/img/";
+    final static  String downloadLink = "https://beyonitysoftwares.cf/tamillyrics/";
 
 
 
@@ -70,9 +72,13 @@ public class DatabaseHandler{
     public static HashMap<String,Object> connect() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            connect = DriverManager
+            /*connect = DriverManager
                     .getConnection("jdbc:mysql://139.99.8.128/beyonity_tamillyrics?useUnicode=true&characterEncoding=utf-8&"
-                            + "user=beyonity_admin&password=@Beyonity2017");
+                            + "user=beyonity_admin&password=@Beyonity2017");*/
+
+            connect = DriverManager
+                    .getConnection("jdbc:mysql://mohanravi.space/tamillyrics?useUnicode=true&characterEncoding=utf-8&"
+                            + "user=mohan&password=Rehcaetynoloc");
             System.out.println("connected");
             response.put("error",false);
             response.put("message","Successfully connected to database");
@@ -296,6 +302,7 @@ public class DatabaseHandler{
 
     public static HashMap<String,Object> insertSong(song i){
 
+        String song_title = Helper.FirstLetterCaps(i.getSong_title());
         int album_id = Integer.parseInt(i.getAlbum_id());
         int track_no = Integer.parseInt(i.getTrackNo());
         int genre_id = getGenreId(i.getGenre());
@@ -305,10 +312,10 @@ public class DatabaseHandler{
             try {
 
                 String query = "INSERT INTO songs(album_id,song_title,lyrics_one,lyrics_two,lyrics_three,lyrics_four,genre_id,lyricist_id,track_no)" +
-                        "VALUES(?,?,?,?,?)";
+                        "VALUES(?,?,?,?,?,?,?,?,?)";
                 PreparedStatement ps = connect.prepareStatement(query);
                 ps.setInt(1,album_id);
-                ps.setString(2,i.getSong_title());
+                ps.setString(2,song_title);
                 ps.setString(3,i.getLyrics().getEnglish_one());
                 ps.setString(4,i.getLyrics().getEnglish_two());
                 ps.setString(5,i.getLyrics().getTamil_one());
@@ -481,7 +488,7 @@ public class DatabaseHandler{
             st = connect.createStatement();
             resultSet = st.executeQuery(query);
             while (resultSet.next()){
-                value = resultSet.getString("lyricisit_name");
+                value = resultSet.getString("lyricist_name");
 
             }
             return value;
@@ -635,6 +642,21 @@ public class DatabaseHandler{
 
 
     }
+    public static void setDownloadLink(int album_id,int song_id){
+
+        String query = "UPDATE songs set download_link = '" + downloadLink+ "" + album_id + "/"+song_id+".ogg' WHERE id = '" + song_id + "'";
+        System.out.println(query);
+
+        PreparedStatement st = null;
+        try {
+            st = connect.prepareStatement(query);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
 
     public static boolean getImageNull(int album_id){
         boolean answer = false;
@@ -682,13 +704,13 @@ public class DatabaseHandler{
                 String lyricist_name = getLyricistName(lyricist_id);
 
                 song s = new song(
-                        String.valueOf(a_id),
                         String.valueOf(song_id),
+                        String.valueOf(a_id),
                         song_title,
                         genre_name,
                         lyricist_name,
-                        download_link,
-                        String.valueOf(trackNo));
+                        String.valueOf(trackNo),
+                        download_link);
 
                 allLyrics allLyrics = new allLyrics();
 
@@ -710,6 +732,57 @@ public class DatabaseHandler{
         return songList;
     }
 
+    public static song getSong(String song_title){
+        song s = new song();
+        String query = "Select * from songs where song_title = '"+song_title+"'";
+        Statement st = null;
+        try {
+            st = connect.createStatement();
+            ResultSet set = st.executeQuery(query);
+            while (set.next()){
+                int song_id = set.getInt("id");
+                int a_id = set.getInt("album_id");
+                String song_t = set.getString("song_title");
+                int genre_id = set.getInt("genre_id");
+                int lyricist_id = set.getInt("lyricist_id");
+                String lyrics_one = set.getString("lyrics_one");
+                String lyrics_two = set.getString("lyrics_two");
+                String lyrics_three = set.getString("lyrics_three");
+                String lyrics_four = set.getString("lyrics_four");
+                int trackNo = set.getInt("track_no");
+                String download_link = set.getString("download_link");
+                String genre_name = getGenreName(genre_id);
+                String lyricist_name = getLyricistName(lyricist_id);
+
+                s = new song(
+                        String.valueOf(song_id),
+                        String.valueOf(a_id),
+                        song_t,
+                        genre_name,
+                        lyricist_name,
+                        String.valueOf(trackNo),
+                        download_link);
+
+                allLyrics allLyrics = new allLyrics();
+
+                allLyrics.setEnglish_one(lyrics_one);
+                allLyrics.setEnglish_two(lyrics_two);
+                allLyrics.setTamil_one(lyrics_three);
+                allLyrics.setTamil_two(lyrics_four);
+                s.setLyrics(allLyrics);
+
+
+
+
+
+            }
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+
+        return s;
+    }
+
     public static void uploadDownloadLink(String link,int song_id){
         String update = "UPDATE songs set download_link = ? WHERE song_id = ?";
         try {
@@ -722,4 +795,107 @@ public class DatabaseHandler{
         }
 
     }
+
+
+    public static void updateSongTitle(int album_id,int song_id,String song_title){
+
+        String song_t = Helper.FirstLetterCaps(song_title);
+        String query = "UPDATE songs set song_title = '" + song_t+"' WHERE id = '" + song_id + "' AND album_id = '"+album_id+"'";
+        System.out.println(query);
+
+        PreparedStatement st = null;
+        try {
+            st = connect.prepareStatement(query);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    public static void updateLyrics(int album_id,int song_id,allLyrics a){
+
+        String query = "UPDATE songs SET lyrics_one = ?, lyrics_two = ?, lyrics_three = ?, lyrics_four = ? WHERE id = ? AND album_id = ?";
+        System.out.println(query);
+
+        PreparedStatement st = null;
+        try {
+            st = connect.prepareStatement(query);
+            st.setString(1,a.getEnglish_one());
+            st.setString(2,a.getEnglish_two());
+            st.setString(3,a.getTamil_one());
+            st.setString(4,a.getTamil_two());
+            st.setInt(5,song_id);
+            st.setInt(6,album_id);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    public static void updateGenreInSong(int album_id,int song_id,String genre_name){
+
+        int genre_id = getGenreId(genre_name);
+        String query = "UPDATE songs SET genre_id = ? WHERE id = ? AND album_id = ?";
+        System.out.println(query);
+
+        PreparedStatement st = null;
+        try {
+            st = connect.prepareStatement(query);
+            st.setInt(1,genre_id);
+            st.setInt(2,song_id);
+            st.setInt(3,album_id);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    public static void updateLyricistInSong(int album_id,int song_id,String lyricist_name){
+
+        int lyricist_id = getLyricistId(lyricist_name);
+        String query = "UPDATE songs SET lyricist_id = ? WHERE id = ? AND album_id = ?";
+        System.out.println(query);
+
+        PreparedStatement st = null;
+        try {
+            st = connect.prepareStatement(query);
+            st.setInt(1,lyricist_id);
+            st.setInt(2,song_id);
+            st.setInt(3,album_id);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    public static void updateTrackNoInSong(int album_id,int song_id,int track_no){
+
+
+        String query = "UPDATE songs SET track_no = ? WHERE id = ? AND album_id = ?";
+        System.out.println(query);
+
+        PreparedStatement st = null;
+        try {
+            st = connect.prepareStatement(query);
+            st.setInt(1,track_no);
+            st.setInt(2,song_id);
+            st.setInt(3,album_id);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
 }

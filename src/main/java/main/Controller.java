@@ -59,7 +59,7 @@ public class Controller {
     boolean albumset = false;
     private PrintStream ps ;
     @FXML
-    ImageView albumimage;
+    ImageView albumimage,uploaded;
     ObservableList<song> songtablelist = FXCollections.observableArrayList();
     ObservableList createcomboartistlist = FXCollections.observableArrayList();
     ObservableList createcomboherolist = FXCollections.observableArrayList();
@@ -73,8 +73,10 @@ public class Controller {
     public ObservableList<String> genrelist = FXCollections.observableArrayList();
     public ObservableList<String> lyricistlistTable = FXCollections.observableArrayList();
     public ObservableList<String> genrelistTable = FXCollections.observableArrayList();
+    File imageFile;
 
-
+    Image green = new Image(String.valueOf(getClass().getResource("/uploaded.png")));
+    Image red = new Image(String.valueOf(getClass().getResource("/notuploaded.png")));
     @FXML
     TextField albumname,year,albumid;
 
@@ -92,7 +94,7 @@ public class Controller {
     HashMap<String,Object> reponse = new HashMap<String, Object>();
 
     @FXML
-    Button newalbum,clearalbumfields;
+    Button newalbum,clearalbumfields,imageselect;
 
     @FXML
     Button add = new Button();
@@ -165,7 +167,10 @@ public class Controller {
             @Override
             public void handle(ActionEvent event) {
                 if(comboartist.getSelectionModel().getSelectedItem().equals("None")||combohero.getSelectionModel().getSelectedItem().equals("None")||comboheroin.getSelectionModel().getSelectedItem().equals("None")){
+
                     status.setText("Fields cannot be none");
+                }else if(imageFile==null){
+                    status.setText("please select image!");
                 }else {
                    if(year.getText().length()==4&&albumname.getText().length()>0){
                        if(albumid.getText().length()==0) {
@@ -183,6 +188,33 @@ public class Controller {
                                DatabaseHandler.getAlbums();
                                albumview.getItems().clear();
                                albumview.setItems(observablevalues.getAlbumNameList());
+                               if(imageFile !=null){
+                                   Image image = new Image(imageFile.toURI().toString(), 205, 200, false, false);
+                                   try {
+                                       File remoteFile = new File(albumid.getText().toString() + ".png");
+
+                                       ImageIO.write(
+                                               SwingFXUtils.fromFXImage(
+                                                       image,
+                                                       null),
+                                               "png",
+                                               remoteFile);
+                                       try {
+                                           ftpUploader.uploadFile(remoteFile.getAbsolutePath(), "/" + remoteFile.getName(), "/img",remoteFile);
+                                           DatabaseHandler.setImageLink(Integer.parseInt(albumid.getText()));
+                                           uploaded.setImage(green);
+                                           DatabaseHandler.getAlbums();
+                                           album  a = DatabaseHandler.getAlbum(albumname.getText());
+                                           albumview.getSelectionModel().select(a.getAlbum_name());
+                                           setSelectedAlbum(a);
+                                       } catch (Exception e) {
+                                           e.printStackTrace();
+                                       }
+
+                                   } catch (IOException e) {
+                                       e.printStackTrace();
+                                   }
+                               }
 
                            } else {
                                status.setText((String) reponse.get("message"));
@@ -204,89 +236,16 @@ public class Controller {
             public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
 
                 album  a = DatabaseHandler.getAlbum(newValue);
-                if(a!=null){
-                    System.out.print(a.getAlbum_id());
-                    System.out.print(a.getAlbum_name());
-                    System.out.print(a.getArtist_id());
-                    System.out.print(a.getHero_id());
-                    System.out.print(a.getHeroin_id());
-                    System.out.print(a.getYear());
-                    System.out.print(a.getImage_link());
-
-                    albumid.setText(getInt(a.getAlbum_id()));
-                    albumname.setText(a.getAlbum_name());
-                    /*int artistindex = 0;
-                    int heroindex = 0;
-                    int heroinindex = 0;
-                    String artistName = DatabaseHandler.getArtistName(a.getArtist_id());
-                    String heroname =   DatabaseHandler.getHeroName(a.getHero_id());
-                    String heroinname = DatabaseHandler.getHeroinName(a.getHeroin_id());
-
-                    for(Object name : observablevalues.getCreateArtistlist()){
-                        if(name.equals(artistName)){
-                            artistindex = observablevalues.getCreateArtistlist().indexOf(name);
-                        }
-                    }
-
-                    for(Object name : observablevalues.getCreateHerolist()){
-                        if(name.equals(heroname)){
-                            heroindex = observablevalues.getCreateHerolist().indexOf(name);
-                        }
-                    }
-                      for(Object name : observablevalues.getHeroinlist()){
-                        if(name.equals(heroinname)){
-                            heroinindex = observablevalues.getCreateHeroinlist().indexOf(name);
-                        }
-                    }*/
-
-                    comboartist.getSelectionModel().select(DatabaseHandler.getArtistName(a.getArtist_id()));
-                    combohero.getSelectionModel().select(DatabaseHandler.getHeroName(a.getHero_id()));
-                    comboheroin.getSelectionModel().select(DatabaseHandler.getHeroinName(a.getHeroin_id()));
-
-                    Runnable r = new Runnable() {
-                        @Override
-                        public void run() {
-                            Image i = new Image(a.getImage_link());
-                            Timer it = new Timer("Timer");
-                            TimerTask ts = new TimerTask() {
-                                @Override
-                                public void run() {
-                                    status.setProgress(i.getProgress());
-                                }
-                            };
-
-                            it.scheduleAtFixedRate(ts,1000,10);
-                            albumimage.setImage(i);
-                        }
-                    };
-                    Thread t = new Thread(r);
-                    t.start();
-                    year.setText(String.valueOf(a.getYear()));
-                    albumset = true;
-
-                    songtablelist.clear();
-                    ObservableList<song> songlist = DatabaseHandler.getSongs(a.getAlbum_id());
-                    for(song s : songlist){
-                        songtablelist.add(s);
-                    }
-                    setTableCombo();
-                    presentSelectedAlbumId = a.getAlbum_id();
-                    setSongTable(a.getAlbum_id());
-
-
-                }
+                setSelectedAlbum(a);
 
             }
         });
 
 
-        albumimage.setOnMousePressed(new EventHandler<MouseEvent>() {
+        imageselect.setOnAction(new EventHandler<ActionEvent>() {
             @Override
-            public void handle(MouseEvent event) {
-                if(albumid.getText().length()<1){
-                    status.setText("please create or select a album to upload a image");
-                    return;
-                }
+            public void handle(ActionEvent actionEvent) {
+
                 FileChooser fileChooser = new FileChooser();
 
                 //Set extension filter
@@ -294,35 +253,49 @@ public class Controller {
                 FileChooser.ExtensionFilter extFilterPNG = new FileChooser.ExtensionFilter("PNG files (*.png)", "*.PNG");
                 fileChooser.getExtensionFilters().addAll(extFilterJPG, extFilterPNG);
 
+
                 //Show open file dialog
-                File file = fileChooser.showOpenDialog(null);
+                if (albumid.getText().length()>1) {
+                    File file = fileChooser.showOpenDialog(null);
 
 
                     //BufferedImage bufferedImage = ImageIO.read(file);
                     //Image image = SwingFXUtils.toFXImage(bufferedImage, null);
-                   Image image = new Image(file.toURI().toString(),205,200,false,false);
+                    Image image = new Image(file.toURI().toString(), 205, 200, false, false);
                     albumimage.setImage(image);
 
-                try {
-                    File remoteFile = new File(albumid.getText().toString()+".png");
-                    ImageIO.write(
-                            SwingFXUtils.fromFXImage(
-                                    image,
-                                    null),
-                            "png",
-                           remoteFile);
                     try {
-                        ftpUploader.uploadFile(remoteFile.getAbsolutePath(),"/"+remoteFile.getName(),"/img");
-                        DatabaseHandler.setImageLink(Integer.parseInt(albumid.getText()));
-                    } catch (Exception e) {
+                        File remoteFile = new File(albumid.getText().toString() + ".png");
+                        ImageIO.write(
+                                SwingFXUtils.fromFXImage(
+                                        image,
+                                        null),
+                                "png",
+                                remoteFile);
+                        try {
+                            ftpUploader.uploadFile(remoteFile.getAbsolutePath(), "/" + remoteFile.getName(), "/img",remoteFile);
+                            DatabaseHandler.setImageLink(Integer.parseInt(albumid.getText()));
+                            uploaded.setImage(green);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
+                }else {
+                    FileChooser chooser = new FileChooser();
 
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    //Set extension filter
+                    FileChooser.ExtensionFilter jpg = new FileChooser.ExtensionFilter("JPG files (*.jpg)", "*.jpg");
+                    FileChooser.ExtensionFilter png = new FileChooser.ExtensionFilter("PNG files (*.png)", "*.png");
+                    chooser.getExtensionFilters().addAll(jpg, png);
+                   imageFile = chooser.showOpenDialog(null);
+                    Image image = new Image(imageFile.toURI().toString(), 205, 200, false, false);
+                    albumimage.setImage(image);
+                    uploaded.setImage(red);
                 }
             }
-
         });
 
         clearalbumfields.setOnAction(new EventHandler<ActionEvent>() {
@@ -343,7 +316,8 @@ public class Controller {
             }
         });
         try {
-            ftpUploader = new FTPUploader("139.99.2.52", "tamillyrics@beyonitysoftwares.cf", "mohanravi1990");
+            //ftpUploader = new FTPUploader("139.99.2.52", "tamillyrics@beyonitysoftwares.cf", "mohanravi1990");
+            ftpUploader = new FTPUploader("mohanravi.space", "mohan", "ravi");
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -398,8 +372,18 @@ public class Controller {
 
 
                 if(Integer.parseInt(i.getSong_id())>0){
-                    System.out.println("am in first");
-
+                    Platform.runLater(new Runnable() {
+                        @Override public void run() {
+                            DatabaseHandler.updateSongTitle(Integer.parseInt(i.getAlbum_id()), Integer.parseInt(i.getSong_id()), songtitle);
+                            songtablelist.clear();
+                            ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(i.getAlbum_id()));
+                            for (song s : songlist) {
+                                songtablelist.add(s);
+                            }
+                            setTableCombo();
+                            presentSelectedAlbumId = Integer.parseInt(i.getAlbum_id());
+                            setSongTable(Integer.parseInt(i.getAlbum_id()));
+                        }});
                 }else {
 
                     InserSong(i);
@@ -421,7 +405,18 @@ public class Controller {
 
                 if(Integer.parseInt(i.getSong_id())>0){
 
-
+                    Platform.runLater(new Runnable() {
+                        @Override public void run() {
+                            DatabaseHandler.updateTrackNoInSong(Integer.parseInt(i.getAlbum_id()), Integer.parseInt(i.getSong_id()), Integer.parseInt(TrackNo));
+                            songtablelist.clear();
+                            ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(i.getAlbum_id()));
+                            for (song s : songlist) {
+                                songtablelist.add(s);
+                            }
+                            setTableCombo();
+                            presentSelectedAlbumId = Integer.parseInt(i.getAlbum_id());
+                            setSongTable(Integer.parseInt(i.getAlbum_id()));
+                        }});
                 }else {
 
                     InserSong(i);
@@ -442,8 +437,19 @@ public class Controller {
                 i.setLyricist(lyricistname);
 
                 if(Integer.parseInt(i.getSong_id())>0){
+                    Platform.runLater(new Runnable() {
+                        @Override public void run() {
+                            DatabaseHandler.updateLyricistInSong(Integer.parseInt(i.getAlbum_id()), Integer.parseInt(i.getSong_id()), lyricistname);
+                            songtablelist.clear();
+                            ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(i.getAlbum_id()));
+                            for (song s : songlist) {
+                                songtablelist.add(s);
+                            }
+                            setTableCombo();
+                            presentSelectedAlbumId = Integer.parseInt(i.getAlbum_id());
+                            setSongTable(Integer.parseInt(i.getAlbum_id()));
 
-
+                        }});
                 }else {
 
                    InserSong(i);
@@ -464,6 +470,18 @@ public class Controller {
 
                 if(Integer.parseInt(i.getSong_id())>0){
 
+                    Platform.runLater(new Runnable() {
+                        @Override public void run() {
+                            DatabaseHandler.updateGenreInSong(Integer.parseInt(i.getAlbum_id()),Integer.parseInt(i.getSong_id()),genrename);
+                            songtablelist.clear();
+                            ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(i.getAlbum_id()));
+                            for(song s : songlist){
+                                songtablelist.add(s);
+                            }
+                            setTableCombo();
+                            presentSelectedAlbumId = Integer.parseInt(i.getAlbum_id());
+                            setSongTable(Integer.parseInt(i.getAlbum_id()));
+                        }});
 
                 }else {
                     InserSong(i);
@@ -516,6 +534,7 @@ public class Controller {
                                                 lyrics.put("tamiltwo","");
                                             }
 
+                                            lyrics.put("edited","no");
 
 
                                             ObserveLyrics.setLyrics(lyrics);
@@ -534,20 +553,36 @@ public class Controller {
                                             stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
                                                 public void handle(WindowEvent windowEvent) {
 
-                                                        HashMap<String,String> editedlyrics = ObserveLyrics.getLyrics();
-                                                        song s = (song)getTableRow().getItem();
-                                                        s.getLyrics().setEnglish_one(editedlyrics.get("englishone"));
-                                                        s.getLyrics().setEnglish_two(editedlyrics.get("englishtwo"));
-                                                        s.getLyrics().setTamil_one(editedlyrics.get("tamilone"));
-                                                        s.getLyrics().setTamil_two(editedlyrics.get("tamiltwo"));
 
-                                                    if(Integer.parseInt(s.getSong_id())>0){
+                                                    Platform.runLater(new Runnable() {
+                                                        @Override public void run() {
+                                                            HashMap<String, String> editedlyrics = ObserveLyrics.getLyrics();
+                                                            if (editedlyrics.get("edited").equals("yes")) {
+                                                                song s = (song) getTableRow().getItem();
+                                                                s.getLyrics().setEnglish_one(editedlyrics.get("englishone"));
+                                                                s.getLyrics().setEnglish_two(editedlyrics.get("englishtwo"));
+                                                                s.getLyrics().setTamil_one(editedlyrics.get("tamilone"));
+                                                                s.getLyrics().setTamil_two(editedlyrics.get("tamiltwo"));
+
+                                                                if (Integer.parseInt(s.getSong_id()) > 0) {
+
+                                                                    DatabaseHandler.updateLyrics(Integer.parseInt(s.getAlbum_id()), Integer.parseInt(s.getSong_id()), s.getLyrics());
+                                                                    songtablelist.clear();
+                                                                    ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(s.getAlbum_id()));
+                                                                    for (song i : songlist) {
+                                                                        songtablelist.add(i);
+                                                                    }
+                                                                    setTableCombo();
+                                                                    presentSelectedAlbumId = Integer.parseInt(s.getAlbum_id());
+                                                                    setSongTable(Integer.parseInt(s.getAlbum_id()));
 
 
-                                                    }else {
+                                                                } else {
 
-                                                       InserSong(s);
-                                                    }
+                                                                    InserSong(s);
+                                                                }
+                                                            }
+                                                        }});
 
 
 
@@ -606,6 +641,14 @@ public class Controller {
                                                         } else {
                                                             ftpUploader.mkdir(s.getAlbum_id());
                                                         }
+
+                                                        if(Integer.parseInt(s.getSong_id())>0){
+
+
+                                                        }else {
+
+                                                            InserSong(s);
+                                                        }
                                                     } catch (IOException e) {
                                                         e.printStackTrace();
                                                     }
@@ -617,13 +660,6 @@ public class Controller {
                                         t.start();
 
 
-                                        if(Integer.parseInt(s.getSong_id())>0){
-
-
-                                        }else {
-
-                                            InserSong(s);
-                                        }
 
 
                                         //BufferedImage bufferedImage = ImageIO.read(file);
@@ -869,27 +905,125 @@ public class Controller {
     }
 
     public void InserSong(song i){
-        String english_one = i.getLyrics().getEnglish_one();
-        String english_two = i.getLyrics().getEnglish_two();
-        String tamil_one = i.getLyrics().getTamil_one();
-        String tamil_two = i.getLyrics().getTamil_two();
-        if((i.getSong_title().length()>0)&&(i.getLyricist() !="none")&&(i.getGenre()!="none")&&(english_one!="")&&(english_two!="")&&(tamil_one!="")&&(tamil_two!="")&&(i.getTrackNo()!="0")&&(i.getLocalSongPath()!="")){
-                print(i);
-                reponse = DatabaseHandler.insertSong(i);
-                if(!(boolean)reponse.get("error")){
-                    System.out.println("song id = "+reponse.get("song_id"));
-                    i.setSong_id(String.valueOf(reponse.get("song_id")));
-                    File remoteFile = new File(i.getSong_id()+".ogg");
-                    try {
-                        ftpUploader.uploadFile(i.getLocalSongPath(),remoteFile.getName(),"/"+i.getAlbum_id());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                String english_one = i.getLyrics().getEnglish_one();
+                String english_two = i.getLyrics().getEnglish_two();
+                String tamil_one = i.getLyrics().getTamil_one();
+                String tamil_two = i.getLyrics().getTamil_two();
+                if((i.getSong_title().length()>0)&&(i.getLyricist() !="none")&&(i.getGenre()!="none")&&(english_one!="")&&(english_two!="")&&(tamil_one!="")&&(tamil_two!="")&&(i.getTrackNo()!="0")&&(i.getLocalSongPath()!="")){
+                    print(i);
+                    reponse = DatabaseHandler.insertSong(i);
+                    if(!(boolean)reponse.get("error")){
+                        System.out.println("song id = "+reponse.get("song_id"));
+                        i.setSong_id(String.valueOf(reponse.get("song_id")));
+                        File remoteFile = new File(i.getSong_id()+".ogg");
+                        try {
+                            ftpUploader.uploadFile(i.getLocalSongPath(),"/"+remoteFile.getName(),"/"+i.getAlbum_id(),new File(i.getLocalSongPath()));
+                            DatabaseHandler.setDownloadLink(Integer.parseInt(i.getAlbum_id()),Integer.parseInt(i.getSong_id()));
+                            song a = DatabaseHandler.getSong(i.getSong_title());
+                            albumset = true;
 
-            }else {
-                System.out.println("not passed");
-                print(i);
+                            songtablelist.clear();
+                            ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(i.getAlbum_id()));
+                            for(song s : songlist){
+                                songtablelist.add(s);
+                            }
+                            setTableCombo();
+                            presentSelectedAlbumId = Integer.parseInt(i.getAlbum_id());
+                            setSongTable(Integer.parseInt(i.getAlbum_id()));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }else {
+                    System.out.println("not passed");
+                    print(i);
+                }
+            }
+        });
+
+        }
+
+
+        private void setSelectedAlbum(album a){
+            if(a!=null){
+                System.out.print(a.getAlbum_id());
+                System.out.print(a.getAlbum_name());
+                System.out.print(a.getArtist_id());
+                System.out.print(a.getHero_id());
+                System.out.print(a.getHeroin_id());
+                System.out.print(a.getYear());
+                System.out.print(a.getImage_link());
+
+                albumid.setText(getInt(a.getAlbum_id()));
+                albumname.setText(a.getAlbum_name());
+                    /*int artistindex = 0;
+                    int heroindex = 0;
+                    int heroinindex = 0;
+                    String artistName = DatabaseHandler.getArtistName(a.getArtist_id());
+                    String heroname =   DatabaseHandler.getHeroName(a.getHero_id());
+                    String heroinname = DatabaseHandler.getHeroinName(a.getHeroin_id());
+
+                    for(Object name : observablevalues.getCreateArtistlist()){
+                        if(name.equals(artistName)){
+                            artistindex = observablevalues.getCreateArtistlist().indexOf(name);
+                        }
+                    }
+
+                    for(Object name : observablevalues.getCreateHerolist()){
+                        if(name.equals(heroname)){
+                            heroindex = observablevalues.getCreateHerolist().indexOf(name);
+                        }
+                    }
+                      for(Object name : observablevalues.getHeroinlist()){
+                        if(name.equals(heroinname)){
+                            heroinindex = observablevalues.getCreateHeroinlist().indexOf(name);
+                        }
+                    }*/
+
+                comboartist.getSelectionModel().select(DatabaseHandler.getArtistName(a.getArtist_id()));
+                combohero.getSelectionModel().select(DatabaseHandler.getHeroName(a.getHero_id()));
+                comboheroin.getSelectionModel().select(DatabaseHandler.getHeroinName(a.getHeroin_id()));
+
+                Runnable r = new Runnable() {
+                    @Override
+                    public void run() {
+                        if(a.getImage_link()!=null) {
+                            Image i = new Image(a.getImage_link());
+                            Timer it = new Timer("Timer");
+                            TimerTask ts = new TimerTask() {
+                                @Override
+                                public void run() {
+                                    status.setProgress(i.getProgress());
+                                }
+                            };
+
+                            it.scheduleAtFixedRate(ts, 1000, 10);
+                            albumimage.setImage(i);
+                            uploaded.setImage(green);
+                        }else {
+                            uploaded.setImage(red);
+                        }
+                    }
+                };
+                Thread t = new Thread(r);
+                t.start();
+                year.setText(String.valueOf(a.getYear()));
+                albumset = true;
+
+                songtablelist.clear();
+                ObservableList<song> songlist = DatabaseHandler.getSongs(a.getAlbum_id());
+                for(song s : songlist){
+                    songtablelist.add(s);
+                }
+                setTableCombo();
+                presentSelectedAlbumId = a.getAlbum_id();
+                setSongTable(a.getAlbum_id());
+
+
             }
         }
 
