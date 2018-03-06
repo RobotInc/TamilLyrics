@@ -72,13 +72,13 @@ public class DatabaseHandler{
     public static HashMap<String,Object> connect() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            /*connect = DriverManager
-                    .getConnection("jdbc:mysql://139.99.8.128/beyonity_tamillyrics?useUnicode=true&characterEncoding=utf-8&"
-                            + "user=beyonity_admin&password=@Beyonity2017");*/
-
             connect = DriverManager
+                    .getConnection("jdbc:mysql://139.99.8.128/beyonity_tamillyrics?useUnicode=true&characterEncoding=utf-8&"
+                            + "user=beyonity_admin&password=@Beyonity2017");
+
+           /* connect = DriverManager
                     .getConnection("jdbc:mysql://mohanravi.space/tamillyrics?useUnicode=true&characterEncoding=utf-8&"
-                            + "user=mohan&password=Rehcaetynoloc");
+                            + "user=mohan&password=Rehcaetynoloc");*/
             System.out.println("connected");
             response.put("error",false);
             response.put("message","Successfully connected to database");

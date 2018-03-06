@@ -12,14 +12,24 @@ import org.apache.commons.net.io.CopyStreamAdapter;
 
 public class FTPUploader {
 
+    static  long percentage = 0;
     File file;
     FTPClient ftp = null;
+
+    public interface updateProgress{
+
+            static long update(){
+                return percentage;
+            }
+
+
+    }
     private final UploadStats uploadStats = new UploadStats();
     CopyStreamAdapter copyStreamAdapter = new CopyStreamAdapter() {
         @Override
         public void bytesTransferred(long totalBytesTransferred, int bytesTransferred, long streamSize) {
            // updateUploadStats(totalBytesTransferred, bytesTransferred, streamSize);
-            System.out.println(totalBytesTransferred*100/file.length());
+            percentage = ((int)totalBytesTransferred*100/file.length());
         }
     };
     public FTPUploader(String host, String user, String pwd) throws Exception{

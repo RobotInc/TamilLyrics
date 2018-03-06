@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
 
 import static javafx.scene.control.cell.TextFieldTableCell.forTableColumn;
 
-public class Controller {
+public class Controller implements FTPUploader.updateProgress {
 
     @FXML
     TableView<song> songtable;
@@ -109,8 +109,8 @@ public class Controller {
 
         ps = new PrintStream(new Console(logarea));
         ObserveLyrics.init();
-        //System.setOut(ps);
-        //System.setErr(ps);
+        System.setOut(ps);
+        System.setErr(ps);
         add.setOnAction(new EventHandler<ActionEvent>() {
            public void handle(ActionEvent actionEvent) {
                try {
@@ -316,8 +316,8 @@ public class Controller {
             }
         });
         try {
-            //ftpUploader = new FTPUploader("139.99.2.52", "tamillyrics@beyonitysoftwares.cf", "mohanravi1990");
-            ftpUploader = new FTPUploader("mohanravi.space", "mohan", "ravi");
+            ftpUploader = new FTPUploader("139.99.2.52", "tamillyrics@beyonitysoftwares.cf", "mohanravi1990");
+            //ftpUploader = new FTPUploader("mohanravi.space", "mohan", "ravi");
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -331,6 +331,7 @@ public class Controller {
 
 
     }
+
 
     private void initTable(){
         TableColumn<song,String> song_id = new TableColumn("Song Id");
@@ -866,6 +867,9 @@ public class Controller {
     private String getInt(int value){
         return String.valueOf(value);
     }
+
+
+
     public class Console extends OutputStream {
         private TextArea console;
 
@@ -921,7 +925,22 @@ public class Controller {
                         File remoteFile = new File(i.getSong_id()+".ogg");
                         try {
                             ftpUploader.uploadFile(i.getLocalSongPath(),"/"+remoteFile.getName(),"/"+i.getAlbum_id(),new File(i.getLocalSongPath()));
+                            Timer t = new Timer();
+                            TimerTask timerTasl = new TimerTask() {
+                                @Override
+                                public void run() {
+                                    int progress = (int) FTPUploader.updateProgress.update();
+                                    status.setProgress(progress);
+                                    if(progress==100){
+                                        t.cancel();
+                                    }
+
+                                }
+                            };
+
+                            t.schedule(timerTasl,0,1000);
                             DatabaseHandler.setDownloadLink(Integer.parseInt(i.getAlbum_id()),Integer.parseInt(i.getSong_id()));
+
                             song a = DatabaseHandler.getSong(i.getSong_title());
                             albumset = true;
 
@@ -939,6 +958,7 @@ public class Controller {
                     }
 
                 }else {
+                    status.setText(String.valueOf(reponse.get("message")));
                     System.out.println("not passed");
                     print(i);
                 }
