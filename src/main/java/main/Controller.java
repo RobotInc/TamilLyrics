@@ -1,5 +1,6 @@
 package main;
 
+import com.sun.corba.se.spi.ior.iiop.AlternateIIOPAddressComponent;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
@@ -23,6 +24,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.text.Text;
 import javafx.stage.*;
 import javafx.util.Callback;
 import javafx.util.converter.DateTimeStringConverter;
@@ -44,6 +46,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Logger;
@@ -115,23 +118,91 @@ public class Controller implements FTPUploader.updateProgress {
            public void handle(ActionEvent actionEvent) {
                try {
 
-                   FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/add.fxml"));
+                   if(albumview.getSelectionModel().getSelectedItem()==null){
+                       System.out.println("non selected");
+                       FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/add.fxml"));
 
-                   Parent root1 = null;
-                   root1 = (Parent) fxmlLoader.load();
-                   Stage stage = new Stage();
-                   stage.initModality(Modality.APPLICATION_MODAL);
-                   stage.initStyle(StageStyle.DECORATED);
-                   stage.setTitle("Add");
-                   stage.setScene(new Scene(root1));
-                   stage.setMaximized(false);
-                   stage.setResizable(false);
-                   stage.show();
-                   stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-                       public void handle(WindowEvent windowEvent) {
-                          setAll();
+                       Parent root1 = null;
+                       root1 = (Parent) fxmlLoader.load();
+                       Stage stage = new Stage();
+                       stage.initModality(Modality.APPLICATION_MODAL);
+                       stage.initStyle(StageStyle.DECORATED);
+                       stage.setTitle("Add");
+                       stage.setScene(new Scene(root1));
+                       stage.setMaximized(false);
+                       stage.setResizable(false);
+                       stage.show();
+                       stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+                           public void handle(WindowEvent windowEvent) {
+
+                               setAll();
+                               setTableCombo();
+                           }
+                       });
+                   }else {
+                       ButtonType continue_add = new ButtonType("Continue Adding", ButtonBar.ButtonData.OK_DONE);
+                       ButtonType close = new ButtonType("go back", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                       Text text = new Text("Looks like u are working with an album and its song, adding new field in the middle of editing an album or song might delete ur changes and refreshes the page, please make sure ur changes were updated otherwise go back and update the chages to database and come back later");
+                       text.setWrappingWidth(250);
+                       //String content = "Looks like u are working with an album and its song\n, adding new field in the middle of editing an album \nor song might delete ur changes and refreshes the page\n, please make sure ur changes were updated otherwise go back \nand update the chages to database and come back later";
+                       Alert alert = new Alert(Alert.AlertType.WARNING,"",continue_add,close);
+                       alert.getDialogPane().setContent(text);
+                       alert.setTitle("please be aware you might Lose Data");
+                       Optional<ButtonType> result = alert.showAndWait();
+                       if(result.isPresent() && result.get()==continue_add){
+                           album  a = DatabaseHandler.getAlbum(albumview.getSelectionModel().getSelectedItem());
+                           FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/add.fxml"));
+
+                           Parent root1 = null;
+                           root1 = (Parent) fxmlLoader.load();
+                           Stage stage = new Stage();
+                           stage.initModality(Modality.APPLICATION_MODAL);
+                           stage.initStyle(StageStyle.DECORATED);
+                           stage.setTitle("Add");
+                           stage.setScene(new Scene(root1));
+                           stage.setMaximized(false);
+                           stage.setResizable(false);
+                           stage.show();
+                           stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+                               public void handle(WindowEvent windowEvent) {
+
+                                   setAll();
+                                   setTableCombo();
+                                   String artistName = DatabaseHandler.getArtistName(a.getArtist_id());
+                                   for(Object artist : comboartist.getItems()){
+                                       if(artist.toString().equals(artistName)){
+                                           comboartist.getSelectionModel().select(artist);
+                                       }
+                                   }
+                                   String heroName = DatabaseHandler.getHeroName(a.getHero_id());
+                                   for(Object hero : combohero.getItems()){
+                                       if(hero.toString().equals(heroName)){
+                                           combohero.getSelectionModel().select(hero);
+                                       }
+                                   }
+                                   String heroinName = DatabaseHandler.getHeroinName(a.getHeroin_id());
+                                   for(Object heroin : comboheroin.getItems()){
+                                       if(heroin.toString().equals(heroinName)){
+                                           comboheroin.getSelectionModel().select(heroin);
+                                       }
+                                   }
+
+                               }
+                           });
+                       }else {
+                           return;
                        }
-                   });
+                      alert.setOnCloseRequest(new EventHandler<DialogEvent>() {
+                          @Override
+                          public void handle(DialogEvent dialogEvent) {
+
+                          }
+                      });
+
+                   }
+
+
                } catch (IOException e) {
                    e.printStackTrace();
                }
@@ -619,46 +690,85 @@ public class Controller implements FTPUploader.updateProgress {
                                     setGraphic(null);
                                     setText(null);
                                 } else {
-                                    btn.setOnAction(event -> {
-                                        FileChooser fileChooser = new FileChooser();
-
-                                        //Set extension filter
-                                        FileChooser.ExtensionFilter extFilterOGG = new FileChooser.ExtensionFilter("OGG files (*.ogg)", "*.ogg");
-                                        fileChooser.getExtensionFilters().addAll(extFilterOGG);
-
-                                        //Show open file dialog
-                                        File file = fileChooser.showOpenDialog(null);
+                                    btn.setOnAction((ActionEvent event) -> {
                                         song s = (song) getTableRow().getItem();
-                                        Thread t = new Thread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                if(file != null) {
-                                                    s.setLocalSongPath(file.getAbsolutePath());
-                                                    System.out.println(file.getAbsolutePath());
+                                        if(Integer.parseInt(s.getSong_id())!=0){
+                                            FileChooser fileChooser = new FileChooser();
 
-                                                    try {
-                                                        if (ftpUploader.checkDirectoryExists(s.getAlbum_id())) {
-                                                            System.out.println("album folder present");
-                                                        } else {
-                                                            ftpUploader.mkdir(s.getAlbum_id());
+                                            //Set extension filter
+                                            FileChooser.ExtensionFilter extFilterOGG = new FileChooser.ExtensionFilter("OGG files (*.ogg)", "*.ogg");
+                                            fileChooser.getExtensionFilters().addAll(extFilterOGG);
+
+                                            //Show open file dialog
+                                            File file = fileChooser.showOpenDialog(null);
+                                            File remoteFile = new File(s.getSong_id()+".ogg");
+                                            Thread t = new Thread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    if(file != null) {
+                                                        s.setLocalSongPath(file.getAbsolutePath());
+                                                        System.out.println(file.getAbsolutePath());
+
+                                                        try {
+                                                            if (ftpUploader.checkDirectoryExists(s.getAlbum_id())) {
+                                                                System.out.println("album folder present");
+                                                            } else {
+                                                                ftpUploader.mkdir(s.getAlbum_id());
+                                                            }
+                                                                ftpUploader.uploadFile(s.getLocalSongPath(),"/"+remoteFile.getName(),"/"+s.getAlbum_id(),new File(s.getLocalSongPath()));
+                                                                Timer t = new Timer();
+                                                                TimerTask timerTasl = new TimerTask() {
+                                                                    @Override
+                                                                    public void run() {
+                                                                        int progress = (int) FTPUploader.updateProgress.update();
+                                                                        status.setProgress(progress);
+                                                                        if(progress==100){
+                                                                            t.cancel();
+                                                                        }
+
+                                                                    }
+                                                                };
+
+                                                                t.schedule(timerTasl,0,1000);
+                                                                DatabaseHandler.setDownloadLink(Integer.parseInt(s.getAlbum_id()),Integer.parseInt(s.getSong_id()));
+
+                                                                song a = DatabaseHandler.getSong(s.getSong_title());
+                                                                albumset = true;
+
+                                                                songtablelist.clear();
+                                                                ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(s.getAlbum_id()));
+                                                                for(song s : songlist){
+                                                                    songtablelist.add(s);
+                                                                }
+                                                                setTableCombo();
+                                                                presentSelectedAlbumId = Integer.parseInt(s.getAlbum_id());
+                                                                setSongTable(Integer.parseInt(s.getAlbum_id()));
+
+
+
+
+
+
+                                                        } catch (IOException e) {
+                                                            e.printStackTrace();
+                                                        } catch (Exception e) {
+                                                            e.printStackTrace();
                                                         }
-
-                                                        if(Integer.parseInt(s.getSong_id())>0){
-
-
-                                                        }else {
-
-                                                            InserSong(s);
-                                                        }
-                                                    } catch (IOException e) {
-                                                        e.printStackTrace();
+                                                    }else {
+                                                        System.out.println("no file selected");
                                                     }
-                                                }else {
-                                                    System.out.println("no file selected");
                                                 }
-                                            }
-                                        });
-                                        t.start();
+                                            });
+                                            t.start();
+
+
+                                        }else {
+                                            Alert a = new Alert(Alert.AlertType.ERROR);
+                                            a.setTitle("Song id not present");
+                                            a.setContentText("Please upload song details and lyrics before adding actual ogg file");
+                                            a.showAndWait();
+                                        }
+
 
 
 
@@ -826,6 +936,7 @@ public class Controller implements FTPUploader.updateProgress {
         genrecombo.setItems(observablevalues.getGenrelist());
 
 
+
         comboartist.setItems(observablevalues.getCreateArtistlist());
         comboartist.getItems().add("None");
         combohero.setItems(observablevalues.getCreateHerolist());
@@ -835,8 +946,8 @@ public class Controller implements FTPUploader.updateProgress {
 
 
         artistcombo.getSelectionModel().selectLast();
-        herocombo.getSelectionModel().selectLast();
-        heroincombo.getSelectionModel().selectLast();
+
+
         lyricistcombo.getSelectionModel().selectLast();
         genrecombo.getSelectionModel().selectLast();
 
@@ -916,42 +1027,26 @@ public class Controller implements FTPUploader.updateProgress {
                 String english_two = i.getLyrics().getEnglish_two();
                 String tamil_one = i.getLyrics().getTamil_one();
                 String tamil_two = i.getLyrics().getTamil_two();
-                if((i.getSong_title().length()>0)&&(i.getLyricist() !="none")&&(i.getGenre()!="none")&&(english_one!="")&&(english_two!="")&&(tamil_one!="")&&(tamil_two!="")&&(i.getTrackNo()!="0")&&(i.getLocalSongPath()!="")){
+                if((i.getSong_title().length()>0)&&(i.getLyricist() !="none")&&(i.getGenre()!="none")&&(english_one!="")&&(english_two!="")&&(tamil_one!="")&&(tamil_two!="")&&(i.getTrackNo()!="0")){
                     print(i);
                     reponse = DatabaseHandler.insertSong(i);
                     if(!(boolean)reponse.get("error")){
                         System.out.println("song id = "+reponse.get("song_id"));
                         i.setSong_id(String.valueOf(reponse.get("song_id")));
-                        File remoteFile = new File(i.getSong_id()+".ogg");
+                        status.setText("successfully added song details...");
+                        song a = DatabaseHandler.getSong(i.getSong_title());
+                        albumset = true;
+
+                        songtablelist.clear();
+                        ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(i.getAlbum_id()));
+                        for(song s : songlist){
+                            songtablelist.add(s);
+                        }
+                        setTableCombo();
+                        presentSelectedAlbumId = Integer.parseInt(i.getAlbum_id());
+                        setSongTable(Integer.parseInt(i.getAlbum_id()));
                         try {
-                            ftpUploader.uploadFile(i.getLocalSongPath(),"/"+remoteFile.getName(),"/"+i.getAlbum_id(),new File(i.getLocalSongPath()));
-                            Timer t = new Timer();
-                            TimerTask timerTasl = new TimerTask() {
-                                @Override
-                                public void run() {
-                                    int progress = (int) FTPUploader.updateProgress.update();
-                                    status.setProgress(progress);
-                                    if(progress==100){
-                                        t.cancel();
-                                    }
 
-                                }
-                            };
-
-                            t.schedule(timerTasl,0,1000);
-                            DatabaseHandler.setDownloadLink(Integer.parseInt(i.getAlbum_id()),Integer.parseInt(i.getSong_id()));
-
-                            song a = DatabaseHandler.getSong(i.getSong_title());
-                            albumset = true;
-
-                            songtablelist.clear();
-                            ObservableList<song> songlist = DatabaseHandler.getSongs(Integer.parseInt(i.getAlbum_id()));
-                            for(song s : songlist){
-                                songtablelist.add(s);
-                            }
-                            setTableCombo();
-                            presentSelectedAlbumId = Integer.parseInt(i.getAlbum_id());
-                            setSongTable(Integer.parseInt(i.getAlbum_id()));
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
